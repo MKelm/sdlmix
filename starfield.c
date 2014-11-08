@@ -15,11 +15,12 @@ int const screen_width = 640;
 int const screen_height = 480;
 int const screen_bpp = 32;
 
-char message_str[256] = "SDL 1.2 Starfield";
+char window_title_str[256] = "SDL 1.2 Starfield";
+char window_footer_str[256] = "developed on CubieTruck";
 
 TTF_Font *font = NULL;
-SDL_Color font_color = { 226, 0, 0 };
-int font_size = 42;
+SDL_Color font_color = { 255, 255, 255 };
+int font_size = 24;
 
 SDL_Event event;
 
@@ -58,7 +59,7 @@ int init() {
     return FALSE;
   }
 
-  SDL_WM_SetCaption(message_str, NULL);
+  SDL_WM_SetCaption(window_title_str, NULL);
 
   stars_init(screen_width / 2, screen_height / 2);
 
@@ -97,7 +98,7 @@ int main(int argc, char* args[]) {
     return 1;
   }
 
-  message = TTF_RenderText_Solid(font, message_str, font_color);
+  message = TTF_RenderText_Solid(font, window_footer_str, font_color);
   if (message == NULL) {
     return 1;
   }
@@ -116,7 +117,7 @@ int main(int argc, char* args[]) {
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
     stars_show();
     apply_surface(
-      screen_width / 2 - message->w / 2, screen_height / 2 - message->h / 2,
+      screen_width - message->w, screen_height - message->h,
       message, screen
     );
 
