@@ -20,8 +20,6 @@ void star_init(int i) {
 
   int rzv = 500 + (rand() % 5001);
   stars[i].zv = rzv / 1000.0;
-
-  stars[i].size = 2;
 }
 
 void stars_init(int origin_x, int origin_y) {
@@ -57,9 +55,9 @@ void stars_show() {
     x = stars[i].screen_x;
     y = stars[i].screen_y;
 
-    int alpha = (255/5) * stars[i].zv;
+    int alpha = (int)((255./5.) * stars[i].zv);
     boxRGBA(
-      screen, x, y, x + stars[i].size, y + stars[i].size, 255, 255, 255, alpha
+      screen, x, y, x + STARS_SIZE, y + STARS_SIZE, 255, 255, 255, alpha
     );
   }
 }
