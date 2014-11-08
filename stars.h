@@ -3,12 +3,12 @@
 #define STARS_BASE_HEIGHT 10
 
 struct st_stars {
-  int x;
-  int y;
-  int vx;
-  int vy;
-  int w;
-  int h;
+  float x;
+  float y;
+  float z;
+  int screen_x;
+  int screen_y;
+  int size;
 };
 
 void stars_init();

@@ -9,15 +9,16 @@ int stars_origin_x;
 int stars_origin_y;
 
 extern SDL_Surface *screen;
+extern int const screen_width;
+extern int const screen_height;
 
 void star_init(int i) {
-  stars[i].x = 0;
-  stars[i].y = 0;
-  stars[i].vx = -2 + (rand() % 5);
-  stars[i].vy = -2 + (rand() % 5);
-  int size = 2;
-  stars[i].w = size;
-  stars[i].h = size;
+
+  stars[i].x = -500 + rand() % 1001;
+  stars[i].y = -500 + rand() % 1001;
+  stars[i].z = 100 + rand() % 901;
+
+  stars[i].size = 2;
 }
 
 void stars_init(int origin_x, int origin_y) {
@@ -33,11 +34,15 @@ void stars_init(int origin_x, int origin_y) {
 void stars_move() {
   int i;
   for (i = 0; i < STARS_AMOUNT; i++) {
-    stars[i].x += stars[i].vx;
-    stars[i].y += stars[i].vy;
 
-    if (abs(stars[i].x) > abs(stars_origin_x) ||
-        abs(stars[i].y) > abs(stars_origin_y)) {
+    stars[i].z -= 5;
+
+    stars[i].screen_x = stars[i].x / stars[i].z * 100 + stars_origin_x;
+    stars[i].screen_y = stars[i].y / stars[i].z * 100 + stars_origin_y;
+
+    if (stars[i].screen_x < 0 || stars[i].screen_y < 0 ||
+        stars[i].screen_x > screen_width || stars[i].screen_y > screen_height ||
+        stars[i].z < 1) {
       star_init(i);
     }
   }
@@ -46,10 +51,10 @@ void stars_move() {
 void stars_show() {
   int i, x, y;
   for (i = 0; i < STARS_AMOUNT; i++) {
-    x = stars_origin_x - stars[i].x;
-    y = stars_origin_y - stars[i].y;
+    x = stars[i].screen_x;
+    y = stars[i].screen_y;
     boxRGBA(
-      screen, x, y, x + stars[i].w, y + stars[i].h, 255, 255, 255, 255
+      screen, x, y, x + stars[i].size, y + stars[i].size, 255, 255, 255, 255
     );
   }
 }

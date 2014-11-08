@@ -8,12 +8,14 @@
 
 #define FPS 15
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
-#define SCREEN_BPP 32
-
 SDL_Surface *screen;
 SDL_Surface *message;
+
+int const screen_width = 640;
+int const screen_height = 480;
+int const screen_bpp = 32;
+
+char message_str[256] = "SDL 1.2 Starfield";
 
 TTF_Font *font = NULL;
 SDL_Color font_color = { 226, 0, 0 };
@@ -46,7 +48,7 @@ int init() {
   }
 
   screen = SDL_SetVideoMode(
-    SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE
+    screen_width, screen_height, screen_bpp, SDL_SWSURFACE
   );
   if (screen == NULL) {
     return FALSE;
@@ -56,9 +58,9 @@ int init() {
     return FALSE;
   }
 
-  SDL_WM_SetCaption("SDL Starfield", NULL);
+  SDL_WM_SetCaption(message_str, NULL);
 
-  stars_init(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+  stars_init(screen_width / 2, screen_height / 2);
 
   return TRUE;
 }
@@ -95,7 +97,7 @@ int main(int argc, char* args[]) {
     return 1;
   }
 
-  message = TTF_RenderText_Solid(font, "SDL 1.2 Starfield", font_color);
+  message = TTF_RenderText_Solid(font, message_str, font_color);
   if (message == NULL) {
     return 1;
   }
@@ -114,7 +116,7 @@ int main(int argc, char* args[]) {
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
     stars_show();
     apply_surface(
-      SCREEN_WIDTH / 2 - message->w / 2, SCREEN_HEIGHT / 2 - message->h / 2,
+      screen_width / 2 - message->w / 2, screen_height / 2 - message->h / 2,
       message, screen
     );
 
