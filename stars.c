@@ -53,8 +53,9 @@ void stars_show() {
   for (i = 0; i < STARS_AMOUNT; i++) {
     x = stars[i].screen_x;
     y = stars[i].screen_y;
+    int alpha = 255 - (stars[i].z * (255./1000.));
     boxRGBA(
-      screen, x, y, x + stars[i].size, y + stars[i].size, 255, 255, 255, 255
+      screen, x, y, x + stars[i].size, y + stars[i].size, 255, 255, 255, alpha
     );
   }
 }
