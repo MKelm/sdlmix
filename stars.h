@@ -3,9 +3,10 @@
 #define STARS_BASE_HEIGHT 10
 
 struct st_stars {
-  float x;
-  float y;
-  float z;
+  float x; // x coordinate
+  float y; // y coordinate
+  float z; // z coordinate
+  float zv; // z velocity
   int screen_x;
   int screen_y;
   int size;
