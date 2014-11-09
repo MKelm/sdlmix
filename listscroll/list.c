@@ -51,10 +51,13 @@ void list_init() {
 }
 
 void list_change_offset(int up, float val_y) {
-  if (up == TRUE)
-    list_offset[1] += val_y;
-  else
-    list_offset[1] -= val_y;
+  if (up == TRUE) {
+    if (list_offset[1] + val_y <= 0)
+      list_offset[1] += val_y;
+  } else {
+    if (list_offset[1] - val_y >= -1 * (list_max_y - screen_height))
+      list_offset[1] -= val_y;
+  }
 }
 
 void list_show() {
