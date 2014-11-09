@@ -12,14 +12,19 @@ extern SDL_Surface *screen;
 extern int const screen_width;
 extern int const screen_height;
 
+int stars_rand_min_max(int min, int max) {
+  return (rand() % (max+1-min))+min;
+}
+
 void star_init(int i) {
+  stars[i].x = stars_rand_min_max(500, 2000) - 1000;
+  stars[i].y = stars_rand_min_max(500, 2000) - 1000;
+  stars[i].z = stars_rand_min_max(100, 1000);
 
-  stars[i].x = -500 + rand() % 1001;
-  stars[i].y = -500 + rand() % 1001;
-  stars[i].z = 100 + rand() % 901;
+  stars[i].screen_x = stars[i].old_screen_x = 0;
+  stars[i].screen_y = stars[i].old_screen_y = 0;
 
-  int rzv = 500 + (rand() % 5001);
-  stars[i].zv = rzv / 1000.0;
+  stars[i].zv = stars_rand_min_max(500, 5000) / 1000.0;
 }
 
 void stars_init(int origin_x, int origin_y) {
@@ -38,8 +43,22 @@ void stars_move() {
 
     stars[i].z -= stars[i].zv;
 
+    if (stars[i].screen_x != 0 && stars[i].screen_y != 0) {
+      stars[i].old_screen_x = stars[i].screen_x;
+      stars[i].old_screen_y = stars[i].screen_y;
+    }
+
     stars[i].screen_x = stars[i].x / stars[i].z * 100 + stars_origin_x;
     stars[i].screen_y = stars[i].y / stars[i].z * 100 + stars_origin_y;
+
+    if (stars[i].old_screen_x != 0 && stars[i].old_screen_y != 0) {
+      float xd = stars[i].screen_x - stars[i].old_screen_x;
+      float yd = stars[i].screen_y - stars[i].old_screen_y;
+      stars[i].streak_len = sqrt(xd * xd + yd * yd);
+    } else {
+      stars[i].old_screen_x = stars[i].screen_x;
+      stars[i].old_screen_y = stars[i].screen_y;
+    }
 
     if (stars[i].screen_x < 0 || stars[i].screen_y < 0 ||
         stars[i].screen_x > screen_width || stars[i].screen_y > screen_height ||
@@ -50,14 +69,22 @@ void stars_move() {
 }
 
 void stars_show() {
-  int i, x, y;
+  int i;
   for (i = 0; i < STARS_AMOUNT; i++) {
-    x = stars[i].screen_x;
-    y = stars[i].screen_y;
 
-    int alpha = (int)((255./5.) * stars[i].zv);
-    boxRGBA(
-      screen, x, y, x + STARS_SIZE, y + STARS_SIZE, 255, 255, 255, alpha
+    int alpha = (int)((5000 * stars[i].zv) / stars[i].z);
+    if (alpha > 255) alpha = 255;
+    lineRGBA(
+      screen, stars[i].screen_x, stars[i].screen_y,
+      stars[i].screen_x, stars[i].screen_y,
+      255, 255, 255, alpha
+    );
+
+    if (stars[i].streak_len > 1) alpha = (alpha / stars[i].streak_len);
+    lineRGBA(
+      screen, stars[i].screen_x, stars[i].screen_y,
+      stars[i].old_screen_x, stars[i].old_screen_y,
+      255, 255, 255, alpha
     );
   }
 }
