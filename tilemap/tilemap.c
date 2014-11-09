@@ -2,7 +2,7 @@
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_gfxPrimitives.h"
 #include "SDL/SDL_ttf.h"
-#include "tiles.h"
+#include "map.h"
 
 #define FALSE 0
 #define TRUE 1
@@ -53,13 +53,13 @@ int load_files() {
     return FALSE;
   }
 
-  tiles_load();
+  map_init();
 
   return TRUE;
 }
 
 void clean_up() {
-  tiles_clean_up();
+  map_clean_up();
 
   SDL_FreeSurface(message);
 
@@ -115,7 +115,7 @@ int main(int argc, char* args[]) {
     }
 
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
-    tiles_show();
+    map_show();
     apply_surface(
       screen_width - message->w, screen_height - message->h, message, screen
     );
