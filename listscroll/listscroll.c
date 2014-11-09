@@ -11,9 +11,9 @@
 SDL_Surface *screen;
 SDL_Surface *message;
 
-int const screen_width = 640;
-int const screen_height = 480;
-int const screen_bpp = 32;
+int screen_width = 640;
+int screen_height = 480;
+int screen_bpp = 32;
 
 char window_title_str[256] = "SDL 1.2 List Scroll";
 char window_footer_str[256] = "developed on CubieTruck";
@@ -126,6 +126,7 @@ int main(int argc, char* args[]) {
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
 
     list_show();
+    list_scrollbar_show();
 
     apply_surface(
       screen_width - message->w, screen_height - message->h,

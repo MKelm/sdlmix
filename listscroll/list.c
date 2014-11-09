@@ -1,17 +1,20 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_ttf.h"
+#include "SDL/SDL_gfxPrimitives.h"
 #include "list.h"
 
 #define FALSE 0
 #define TRUE 1
 
-struct st_list_entry list[LIST_MAX_ENTRIES];
-int list_length;
-float list_offset[2];
-
+extern int screen_width;
+extern int screen_height;
 extern SDL_Surface *screen;
 extern char font_name[128];
 
+int list_length;
+float list_max_y;
+float list_offset[2];
+struct st_list_entry list[LIST_MAX_ENTRIES];
 struct st_list_entry_format list_title_format;
 struct st_list_entry_format list_text_format;
 
@@ -27,9 +30,11 @@ void list_init() {
   list_text_format.color[2] = 202;
   list_text_format.size = 18;
 
-  list_offset[0] = 0; // x
-  list_offset[1] = 0; // y
-  list_length = 25;
+  list_length = 40;
+  list_max_y = 0.;
+  list_offset[0] = 0.; // x
+  list_offset[1] = 0.; // y
+
   int i;
   for (i = 0; i < list_length; i++) {
     strncpy(list[i].title, "Entry i:", sizeof(list[i].title));
@@ -65,8 +70,8 @@ void list_show() {
     list_text_format.color[0], list_text_format.color[1], list_text_format.color[2]
   };
 
+  SDL_Rect offset;
   for (i = 0; i < list_length; i++) {
-    SDL_Rect offset;
     offset.x = entry_pos_x;
     offset.y = entry_pos_y;
 
@@ -82,4 +87,25 @@ void list_show() {
     entry_pos_y += text->h;
     offset.y = entry_pos_y;
   }
+  list_max_y = offset.y;
+
+}
+
+void list_scrollbar_show() {
+
+  float range_step_size = ((screen_height - 13 - 12) / list_max_y);
+
+  float step_pos = range_step_size * list_offset[1] * -1;
+
+  rectangleRGBA(
+    screen, screen_width - 20, 0, screen_width - 1, screen_height - 1,
+    255, 255, 255, 255
+  );
+
+  boxRGBA(
+    screen,
+    screen_width - 18, 2 + (int)step_pos,
+    screen_width - 3, 20 + (int)step_pos,
+    255, 255, 255, 255
+  );
 }
