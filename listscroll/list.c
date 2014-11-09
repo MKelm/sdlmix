@@ -30,7 +30,7 @@ void list_init() {
   list_text_format.color[2] = 202;
   list_text_format.size = 18;
 
-  list_length = 40;
+  list_length = 25;
   list_max_y = 0.;
   list_offset[0] = 0.; // x
   list_offset[1] = 0.; // y
@@ -87,13 +87,13 @@ void list_show() {
     entry_pos_y += text->h;
     offset.y = entry_pos_y;
   }
-  list_max_y = offset.y;
+  list_max_y = list_length * (title->h + text->h);
 
 }
 
 void list_scrollbar_show() {
 
-  float range_step_size = ((screen_height - 13 - 12) / list_max_y);
+  float range_step_size = (screen_height - 12 -13) / (list_max_y - screen_height);
 
   float step_pos = range_step_size * list_offset[1] * -1;
 
