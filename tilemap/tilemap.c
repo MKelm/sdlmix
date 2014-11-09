@@ -1,6 +1,5 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
-#include "SDL/SDL_gfxPrimitives.h"
 #include "SDL/SDL_ttf.h"
 #include "map.h"
 
@@ -105,10 +104,15 @@ int main(int argc, char* args[]) {
         rightMouseButtonDown = FALSE;
         map_move_reset();
       }
-
       if (event.type == SDL_MOUSEMOTION) {
         if (rightMouseButtonDown == TRUE) {
           map_move(event.button.x, event.button.y);
+        }
+      }
+      if (event.type == SDL_KEYDOWN) {
+        switch (event.key.keysym.sym) {
+          case SDLK_g: map_toggle_grid(); break;
+          default: ;
         }
       }
       if (event.type == SDL_QUIT) {

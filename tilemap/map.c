@@ -9,6 +9,7 @@ extern struct st_tile tiles[TILES_MAX];
 
 int map[MAP_MAX_Y][MAP_MAX_X];
 int map_loaded = FALSE;
+int map_show_grid = FALSE;
 
 SDL_Rect map_rect;
 SDL_Rect map_move_rect;
@@ -40,6 +41,10 @@ void map_init() {
   }
 }
 
+void map_toggle_grid() {
+  map_show_grid = (map_show_grid == TRUE) ? FALSE : TRUE;
+}
+
 void map_show() {
   if (map_loaded == TRUE) {
     SDL_Rect offset;
@@ -55,6 +60,35 @@ void map_show() {
       }
       y += TILES_SIZE;
     }
+  }
+
+  if (map_show_grid == TRUE) {
+    int row, col, x, y;
+    y = map_rect.y;
+    for (row = 0; row < MAP_MAX_Y; row++) {
+      x = map_rect.x;
+      lineRGBA(
+        screen, x, y, x + MAP_MAX_X * TILES_SIZE, y,
+        255, 255, 255, 255
+      );
+      for (col = 0; col < MAP_MAX_X; col++) {
+        lineRGBA(
+          screen, x, y, x, y + MAP_MAX_Y * TILES_SIZE - row * TILES_SIZE,
+          255, 255, 255, 255
+        );
+        x += TILES_SIZE;
+      }
+      lineRGBA(
+        screen, x, y, x, y + MAP_MAX_Y * TILES_SIZE - row * TILES_SIZE,
+        255, 255, 255, 255
+      );
+      y += TILES_SIZE;
+    }
+    x = map_rect.x;
+    lineRGBA(
+      screen, x, y, x + MAP_MAX_X * TILES_SIZE, y,
+      255, 255, 255, 255
+    );
   }
 }
 
