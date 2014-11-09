@@ -91,22 +91,24 @@ int main(int argc, char* args[]) {
   }
 
   Uint32 frameStart = 0;
-  int mouseButtonDown = FALSE;
+  int rightMouseButtonDown = FALSE;
   int quit = FALSE;
   while (quit == FALSE) {
     frameStart = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_MOUSEBUTTONDOWN) {
-        mouseButtonDown = TRUE;
+      if (event.type == SDL_MOUSEBUTTONDOWN &&
+          event.button.button == SDL_BUTTON_RIGHT) {
+        rightMouseButtonDown = TRUE;
       }
       if (event.type == SDL_MOUSEBUTTONUP) {
-        mouseButtonDown = FALSE;
+        rightMouseButtonDown = FALSE;
+        map_move_reset();
       }
 
       if (event.type == SDL_MOUSEMOTION) {
-        if (mouseButtonDown == TRUE) {
-          // move tilemap
+        if (rightMouseButtonDown == TRUE) {
+          map_move(event.button.x, event.button.y);
         }
       }
       if (event.type == SDL_QUIT) {

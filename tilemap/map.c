@@ -6,8 +6,15 @@ extern struct st_tile tiles[TILES_MAX];
 
 int map[MAP_MAX_Y][MAP_MAX_X];
 
+SDL_Rect map_rect;
+SDL_Rect map_move_rect;
+
 void map_init() {
   tiles_init();
+
+  map_rect.x = 0;
+  map_rect.y = 0;
+  map_move_reset();
 
   FILE *fp;
   if ((fp = fopen("map.dat", "r")) == NULL) {
@@ -35,9 +42,9 @@ void map_init() {
 void map_show() {
   SDL_Rect offset;
   int row, col, x, y;
-  y = 0;
+  y = map_rect.y;
   for (row = 0; row < MAP_MAX_Y; row++) {
-    x = 0;
+    x = map_rect.x;
     for (col = 0; col < MAP_MAX_X; col++) {
       offset.x = x;
       offset.y = y;
@@ -46,6 +53,20 @@ void map_show() {
     }
     y += TILES_SIZE;
   }
+}
+
+void map_move(int x, int y) {
+  if (map_move_rect.x > -1 && map_move_rect.y > -1) {
+    map_rect.x -= map_move_rect.x - x;
+    map_rect.y -= map_move_rect.y - y;
+  }
+  map_move_rect.x = x;
+  map_move_rect.y = y;
+}
+
+void map_move_reset() {
+  map_move_rect.x = -1;
+  map_move_rect.y = -1;
 }
 
 void map_clean_up() {
