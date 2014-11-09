@@ -40,12 +40,14 @@ void list_init() {
   list_offset[1] = 0.; // y
 
   int i;
+  char tmp_title[128];
   for (i = 0; i < list_length; i++) {
+    sprintf(tmp_title, "Entry %d:", i);
     list[i].title = TTF_RenderText_Solid(
-      list_title_font, "Entry i:", list_title_color
+      list_title_font, tmp_title, list_title_color
     );
     list[i].text = TTF_RenderText_Solid(
-      list_text_font, "This is an entry in the list", list_text_color
+      list_text_font, "What do you expect from a list scroll?", list_text_color
     );
   }
   list_max_y = list_length * (list[i-1].title->h + list[i-1].text->h);
