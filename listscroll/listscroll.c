@@ -77,6 +77,10 @@ int load_files() {
 }
 
 void clean_up() {
+  list_clean_up();
+
+  SDL_FreeSurface(message);
+
   TTF_CloseFont(font);
   TTF_Quit();
 
