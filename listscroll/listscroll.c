@@ -110,6 +110,14 @@ int main(int argc, char* args[]) {
     frameStart = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_MOUSEBUTTONUP) {
+        if (event.button.button == SDL_BUTTON_WHEELUP) {
+          list_change_offset(TRUE, 10.f);
+        } else if (event.button.button == SDL_BUTTON_WHEELDOWN) {
+          list_change_offset(FALSE, 10.f);
+        }
+      }
+
       if (event.type == SDL_QUIT) {
         quit = TRUE;
       }
@@ -117,7 +125,7 @@ int main(int argc, char* args[]) {
 
     SDL_FillRect(screen, &screen->clip_rect, SDL_MapRGB(screen->format, 0, 0, 0));
 
-    show_list();
+    list_show();
 
     apply_surface(
       screen_width - message->w, screen_height - message->h,
