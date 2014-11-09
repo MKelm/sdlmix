@@ -39,9 +39,9 @@ void list_init() {
 
 void list_change_offset(int up, float val_y) {
   if (up == TRUE)
-    list_offset[1] -= val_y;
-  else
     list_offset[1] += val_y;
+  else
+    list_offset[1] -= val_y;
 }
 
 void list_show() {
