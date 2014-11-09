@@ -130,7 +130,7 @@ int main(int argc, char* args[]) {
       }
 
       if (event.type == SDL_MOUSEMOTION) {
-        if (list_set_scrollbar_active(event.motion.x, event.motion.y) &&
+        if (list_set_scrollbar_active(event.motion.x, event.motion.y) == TRUE &&
             mouseButtonDown == TRUE) {
           list_move_scrollbar_slider(event.button.y);
         }
