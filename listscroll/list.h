@@ -3,6 +3,7 @@
 struct st_list_entry {
   SDL_Surface *title;
   SDL_Surface *text;
+  SDL_Surface *image;
 };
 
 void list_init();

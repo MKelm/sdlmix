@@ -26,9 +26,33 @@ SDL_Rect scrollbar;
 SDL_Rect scrollbar_slider;
 int scrollbar_active = FALSE;
 
+int image_size = 32;
+int image_margin_right = 4;
+int title_margin_bottom = 1;
+int text_margin_bottom = 4;
+
+SDL_Surface *list_load_image(char *filename) {
+  SDL_Surface* loadedImage = NULL;
+  SDL_Surface* optimizedImage = NULL;
+
+  loadedImage = IMG_Load(filename);
+  if (loadedImage != NULL) {
+
+    optimizedImage = SDL_DisplayFormat(loadedImage);
+    SDL_FreeSurface(loadedImage);
+    if (optimizedImage != NULL) {
+      SDL_SetColorKey(
+        optimizedImage, SDL_SRCCOLORKEY, SDL_MapRGB(optimizedImage->format, 0, 0, 0)
+      );
+    }
+  }
+
+  return optimizedImage;
+}
+
 void list_init() {
-  list_title_font = TTF_OpenFont(font_name, 24);
-  list_text_font = TTF_OpenFont(font_name, 18);
+  list_title_font = TTF_OpenFont(font_name, 18);
+  list_text_font = TTF_OpenFont(font_name, 16);
 
   list_offset[0] = 0.; // x
   list_offset[1] = 0.; // y
@@ -36,15 +60,21 @@ void list_init() {
   list_length = loader_load();
 
   int i;
-  for (i = 0; i < list_length; i++) {;
+  for (i = 0; i < list_length; i++) {
     list[i].title = TTF_RenderText_Solid(
       list_title_font, loader_list[i].title, list_title_color
     );
     list[i].text = TTF_RenderText_Solid(
       list_text_font, loader_list[i].text, list_text_color
     );
+    if (strcmp(loader_list[i].image, "null") == 0) {
+      list[i].image = NULL;
+    } else {
+      list[i].image = list_load_image(loader_list[i].image);
+    }
   }
-  list_max_y = list_length * (list[i-1].title->h + list[i-1].text->h);
+  list_max_y = list_length *
+    (list[i-1].title->h + title_margin_bottom + list[i-1].text->h + text_margin_bottom);
 }
 
 void list_change_offset(int up, float val_y) {
@@ -67,14 +97,21 @@ void list_show() {
     offset.x = entry_pos_x;
     offset.y = entry_pos_y;
 
+    if (list[i].image != NULL) {
+      SDL_BlitSurface(list[i].image, NULL, screen, &offset);
+      offset.x += image_size + image_margin_right;
+    } else {
+      offset.x = entry_pos_x;
+    }
+
     SDL_BlitSurface(list[i].title, NULL, screen, &offset);
 
-    entry_pos_y += list[i].title->h;
+    entry_pos_y += list[i].title->h + title_margin_bottom;
     offset.y = entry_pos_y;
 
     SDL_BlitSurface(list[i].text, NULL, screen, &offset);
 
-    entry_pos_y += list[i].text->h;
+    entry_pos_y += list[i].text->h + text_margin_bottom;
     offset.y = entry_pos_y;
   }
 }
