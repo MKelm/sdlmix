@@ -174,6 +174,7 @@ void list_clean_up() {
   for (i = 0; i < list_length; i++) {
     SDL_FreeSurface(list[i].title);
     SDL_FreeSurface(list[i].text);
+    SDL_FreeSurface(list[i].image);
   }
 
   TTF_CloseFont(list_title_font);
