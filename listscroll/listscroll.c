@@ -109,12 +109,19 @@ int main(int argc, char* args[]) {
   }
 
   Uint32 frameStart = 0;
+  int mouseButtonDown = FALSE;
   int quit = FALSE;
   while (quit == FALSE) {
     frameStart = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_MOUSEBUTTONDOWN) {
+        mouseButtonDown = TRUE;
+      }
+
       if (event.type == SDL_MOUSEBUTTONUP) {
+        mouseButtonDown = FALSE;
+
         if (event.button.button == SDL_BUTTON_WHEELUP) {
           list_change_offset(TRUE, 10.f);
         } else if (event.button.button == SDL_BUTTON_WHEELDOWN) {
@@ -122,9 +129,10 @@ int main(int argc, char* args[]) {
         }
       }
 
-      if(event.type == SDL_MOUSEMOTION) {
-        if (list_scroll_slider_active(event.motion.x, event.motion.y) == TRUE) {
-          printf("scroll slider active\n");
+      if (event.type == SDL_MOUSEMOTION) {
+        if (list_set_scrollbar_active(event.motion.x, event.motion.y) &&
+            mouseButtonDown == TRUE) {
+          list_move_scrollbar_slider(event.button.y);
         }
       }
 
@@ -139,7 +147,7 @@ int main(int argc, char* args[]) {
     list_scrollbar_show();
 
     apply_surface(
-      screen_width - message->w, screen_height - message->h,
+      screen_width - message->w - 25, screen_height - message->h,
       message, screen
     );
 

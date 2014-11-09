@@ -5,4 +5,5 @@ void list_calc_scroll_slider();
 void list_scrollbar_show();
 void list_clean_up();
 
-int list_scroll_slider_active(int x, int y);
+int list_set_scrollbar_active(int x, int y);
+void list_move_scrollbar_slider(int y);

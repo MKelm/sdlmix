@@ -27,8 +27,9 @@ TTF_Font *list_text_font;
 SDL_Color list_title_color = { 255, 255, 255 };
 SDL_Color list_text_color = { 202, 202, 202 };
 
-SDL_Rect scroll_slider;
-int scroll_slider_active = FALSE;
+SDL_Rect scrollbar;
+SDL_Rect scrollbar_slider;
+int scrollbar_active = FALSE;
 
 void list_init() {
   list_title_font = TTF_OpenFont(font_name, 24);
@@ -82,45 +83,57 @@ void list_show() {
   }
 }
 
-void list_calc_scroll_slider() {
-  int width = 15;
-  int height = 15;
+void list_calc_scrollbar() {
+  int width = 16;
+  int height = 16;
   float range_step_size = (screen_height - (5 + height)) / (list_max_y - screen_height);
   float step_pos = range_step_size * list_offset[1] * -1;
 
-  scroll_slider.x = screen_width - 18;
-  scroll_slider.y = 2 + (int)step_pos;
-  scroll_slider.w = width;
-  scroll_slider.h = height;
+  scrollbar_slider.x = screen_width - 19;
+  scrollbar_slider.y = 2 + (int)step_pos;
+  scrollbar_slider.w = width;
+  scrollbar_slider.h = height;
+
+  scrollbar.x = screen_width - 21;
+  scrollbar.y = 0;
+  scrollbar.w = 20;
+  scrollbar.h = screen_height - 1;
 }
 
 void list_scrollbar_show() {
+  list_calc_scrollbar();
 
   rectangleRGBA(
-    screen, screen_width - 20, 0, screen_width - 1, screen_height - 1,
+    screen, scrollbar.x, scrollbar.y,
+    scrollbar.x + scrollbar.w, scrollbar.y + scrollbar.h,
     255, 255, 255, 255
   );
 
-  list_calc_scroll_slider();
   boxRGBA(
     screen,
-    scroll_slider.x, scroll_slider.y,
-    scroll_slider.x + scroll_slider.w, scroll_slider.y + scroll_slider.h,
+    scrollbar_slider.x, scrollbar_slider.y,
+    scrollbar_slider.x + scrollbar_slider.w, scrollbar_slider.y + scrollbar_slider.h,
     255, 255, 255, 255
   );
 }
 
-int list_scroll_slider_active(int x, int y) {
+int list_set_scrollbar_active(int x, int y) {
 
-  list_calc_scroll_slider();
-  if (x >= scroll_slider.x && y >= scroll_slider.y &&
-      x <= scroll_slider.x + scroll_slider.w &&
-      y <= scroll_slider.y + scroll_slider.h) {
-    scroll_slider_active = TRUE;
+  list_calc_scrollbar();
+  if (x >= scrollbar.x && y >= scrollbar.y &&
+      x <= scrollbar.x + scrollbar.w &&
+      y <= scrollbar.y + scrollbar.h) {
+    scrollbar_active = TRUE;
   } else {
-    scroll_slider_active = FALSE;
+    scrollbar_active = FALSE;
   }
-  return scroll_slider_active;
+  return scrollbar_active;
+}
+
+void list_move_scrollbar_slider(int y) {
+  float range_step_size = (screen_height) / (list_max_y - screen_height);
+  float new_list_offset = y / range_step_size * -1;
+  list_offset[1] = new_list_offset;
 }
 
 void list_clean_up() {
