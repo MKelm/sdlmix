@@ -27,6 +27,9 @@ TTF_Font *list_text_font;
 SDL_Color list_title_color = { 255, 255, 255 };
 SDL_Color list_text_color = { 202, 202, 202 };
 
+SDL_Rect scroll_slider;
+int scroll_slider_active = FALSE;
+
 void list_init() {
   list_title_font = TTF_OpenFont(font_name, 24);
   list_text_font = TTF_OpenFont(font_name, 18);
@@ -76,23 +79,45 @@ void list_show() {
   }
 }
 
-void list_scrollbar_show() {
-
-  float range_step_size = (screen_height - 12 -13) / (list_max_y - screen_height);
-
+void list_calc_scroll_slider() {
+  int width = 15;
+  int height = 15;
+  float range_step_size = (screen_height - (5 + height)) / (list_max_y - screen_height);
   float step_pos = range_step_size * list_offset[1] * -1;
+
+  scroll_slider.x = screen_width - 18;
+  scroll_slider.y = 2 + (int)step_pos;
+  scroll_slider.w = width;
+  scroll_slider.h = height;
+}
+
+void list_scrollbar_show() {
 
   rectangleRGBA(
     screen, screen_width - 20, 0, screen_width - 1, screen_height - 1,
     255, 255, 255, 255
   );
 
+  list_calc_scroll_slider();
   boxRGBA(
     screen,
-    screen_width - 18, 2 + (int)step_pos,
-    screen_width - 3, 20 + (int)step_pos,
+    scroll_slider.x, scroll_slider.y,
+    scroll_slider.x + scroll_slider.w, scroll_slider.y + scroll_slider.h,
     255, 255, 255, 255
   );
+}
+
+int list_scroll_slider_active(int x, int y) {
+
+  list_calc_scroll_slider();
+  if (x >= scroll_slider.x && y >= scroll_slider.y &&
+      x <= scroll_slider.x + scroll_slider.w &&
+      y <= scroll_slider.y + scroll_slider.h) {
+    scroll_slider_active = TRUE;
+  } else {
+    scroll_slider_active = FALSE;
+  }
+  return scroll_slider_active;
 }
 
 void list_clean_up() {

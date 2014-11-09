@@ -122,6 +122,12 @@ int main(int argc, char* args[]) {
         }
       }
 
+      if(event.type == SDL_MOUSEMOTION) {
+        if (list_scroll_slider_active(event.motion.x, event.motion.y) == TRUE) {
+          printf("scroll slider active\n");
+        }
+      }
+
       if (event.type == SDL_QUIT) {
         quit = TRUE;
       }
