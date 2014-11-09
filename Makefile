@@ -1,4 +1,4 @@
-# Makefile for nceventlist
+# Makefile for sdl starfield
 ARCH := $(shell uname -m)
 CC = gcc
 CFLAGS = -Wall -ggdb
