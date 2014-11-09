@@ -103,6 +103,7 @@ void list_show() {
     } else {
       offset.x = entry_pos_x;
     }
+    offset.y = entry_pos_y;
 
     SDL_BlitSurface(list[i].title, NULL, screen, &offset);
 
