@@ -6,6 +6,8 @@
 #define FALSE 0
 #define TRUE 1
 
+#define LIST_MAX_ENTRIES 1024
+
 extern int screen_width;
 extern int screen_height;
 extern SDL_Surface *screen;
@@ -14,30 +16,35 @@ extern char font_name[128];
 int list_length;
 float list_max_y;
 float list_offset[2];
-struct st_list_entry list[LIST_MAX_ENTRIES];
+
+struct st_list_entry {
+  SDL_Surface *title;
+  SDL_Surface *text;
+} list[LIST_MAX_ENTRIES];
 
 TTF_Font *list_title_font;
 TTF_Font *list_text_font;
 SDL_Color list_title_color = { 255, 255, 255 };
 SDL_Color list_text_color = { 202, 202, 202 };
 
-SDL_Surface *list_title;
-SDL_Surface *list_text;
-
 void list_init() {
   list_title_font = TTF_OpenFont(font_name, 24);
   list_text_font = TTF_OpenFont(font_name, 18);
 
   list_length = 25;
-  list_max_y = 0.;
   list_offset[0] = 0.; // x
   list_offset[1] = 0.; // y
 
   int i;
   for (i = 0; i < list_length; i++) {
-    strncpy(list[i].title, "Entry i:", sizeof(list[i].title));
-    strncpy(list[i].text, "This is an entry in the list", sizeof(list[i].text));
+    list[i].title = TTF_RenderText_Solid(
+      list_title_font, "Entry i:", list_title_color
+    );
+    list[i].text = TTF_RenderText_Solid(
+      list_text_font, "This is an entry in the list", list_text_color
+    );
   }
+  list_max_y = list_length * (list[i-1].title->h + list[i-1].text->h);
 }
 
 void list_change_offset(int up, float val_y) {
@@ -57,23 +64,16 @@ void list_show() {
     offset.x = entry_pos_x;
     offset.y = entry_pos_y;
 
-    list_title = TTF_RenderText_Solid(list_title_font, list[i].title, list_title_color);
-    SDL_BlitSurface(list_title, NULL, screen, &offset);
+    SDL_BlitSurface(list[i].title, NULL, screen, &offset);
 
-    entry_pos_y += list_title->h;
+    entry_pos_y += list[i].title->h;
     offset.y = entry_pos_y;
 
-    list_text = TTF_RenderText_Solid(list_text_font, list[i].text, list_text_color);
-    SDL_BlitSurface(list_text, NULL, screen, &offset);
+    SDL_BlitSurface(list[i].text, NULL, screen, &offset);
 
-    entry_pos_y += list_text->h;
+    entry_pos_y += list[i].text->h;
     offset.y = entry_pos_y;
-
-    SDL_FreeSurface(list_title);
-    SDL_FreeSurface(list_text);
   }
-  list_max_y = list_length * (list_title->h + list_text->h);
-
 }
 
 void list_scrollbar_show() {
@@ -96,6 +96,12 @@ void list_scrollbar_show() {
 }
 
 void list_clean_up() {
+  int i;
+  for (i = 0; i < list_length; i++) {
+    SDL_FreeSurface(list[i].title);
+    SDL_FreeSurface(list[i].text);
+  }
+
   TTF_CloseFont(list_title_font);
   TTF_CloseFont(list_text_font);
 }
