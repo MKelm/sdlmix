@@ -2,7 +2,7 @@
 #include "SDL/SDL_image.h"
 #include "tiles.h"
 
-#define TILES_MAX 3
+#define TILES_MAX 4
 #define TILES_SIZE 64
 
 struct st_tile {
@@ -12,7 +12,7 @@ struct st_tile {
 SDL_Surface* tile_image;
 
 char tile_names[TILES_MAX][128] = {
-  "grass_64.png", "dirt_64.png", "water_64.png"
+  "grass_64.png", "dirt_64.png", "water_64.png", "rock_64.png"
 };
 
 extern SDL_Surface *screen;
