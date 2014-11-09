@@ -15,6 +15,7 @@ float list_max_y;
 float list_offset[2];
 
 struct st_list_entry list[LIST_MAX_ENTRIES];
+extern struct st_loader_list_entry loader_list[LIST_MAX_ENTRIES];
 
 TTF_Font *list_title_font;
 TTF_Font *list_text_font;
@@ -29,21 +30,18 @@ void list_init() {
   list_title_font = TTF_OpenFont(font_name, 24);
   list_text_font = TTF_OpenFont(font_name, 18);
 
-  list_length = 25;
   list_offset[0] = 0.; // x
   list_offset[1] = 0.; // y
 
-  loader_load(list);
+  list_length = loader_load();
 
   int i;
-  char tmp_title[128];
-  for (i = 0; i < list_length; i++) {
-    sprintf(tmp_title, "Entry %d:", i);
+  for (i = 0; i < list_length; i++) {;
     list[i].title = TTF_RenderText_Solid(
-      list_title_font, tmp_title, list_title_color
+      list_title_font, loader_list[i].title, list_title_color
     );
     list[i].text = TTF_RenderText_Solid(
-      list_text_font, "What do you expect from a list scroll?", list_text_color
+      list_text_font, loader_list[i].text, list_text_color
     );
   }
   list_max_y = list_length * (list[i-1].title->h + list[i-1].text->h);
