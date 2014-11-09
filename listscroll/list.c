@@ -1,12 +1,9 @@
-#include "SDL/SDL.h"
-#include "SDL/SDL_ttf.h"
-#include "SDL/SDL_gfxPrimitives.h"
+#include "global.h"
 #include "list.h"
+#include "loader.h"
 
 #define FALSE 0
 #define TRUE 1
-
-#define LIST_MAX_ENTRIES 1024
 
 extern int screen_width;
 extern int screen_height;
@@ -17,10 +14,7 @@ int list_length;
 float list_max_y;
 float list_offset[2];
 
-struct st_list_entry {
-  SDL_Surface *title;
-  SDL_Surface *text;
-} list[LIST_MAX_ENTRIES];
+struct st_list_entry list[LIST_MAX_ENTRIES];
 
 TTF_Font *list_title_font;
 TTF_Font *list_text_font;
@@ -38,6 +32,8 @@ void list_init() {
   list_length = 25;
   list_offset[0] = 0.; // x
   list_offset[1] = 0.; // y
+
+  loader_load(list);
 
   int i;
   char tmp_title[128];

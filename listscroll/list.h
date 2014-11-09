@@ -1,3 +1,10 @@
+#define LIST_MAX_ENTRIES 1024
+
+struct st_list_entry {
+  SDL_Surface *title;
+  SDL_Surface *text;
+};
+
 void list_init();
 void list_change_offset(int up, float val_y);
 void list_show();
