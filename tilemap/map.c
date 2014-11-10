@@ -14,6 +14,11 @@ int map_set = FALSE;
 int map_loaded = FALSE;
 int map_show_grid = TRUE;
 
+struct st_map_tile_selection {
+  int row;
+  int col;
+} map_tile_selection;
+
 SDL_Rect map_rect;
 SDL_Rect map_move_rect;
 
@@ -26,6 +31,7 @@ void map_set_map() {
   map_rect.y = 0;
   map_rect.w = map_cols * TILES_SIZE;
   map_rect.h = map_rows * TILES_SIZE;
+  map_tile_selection_reset();
 
   int i;
   map = (int **) malloc(map_rows * sizeof(int *));
@@ -134,6 +140,29 @@ void map_show() {
       255, 255, 255, 255
     );
   }
+
+  if (map_tile_selection.col > -1 && map_tile_selection.row > -1) {
+    rectangleRGBA(
+      screen,
+      map_rect.x + map_tile_selection.col * TILES_SIZE,
+      map_rect.y + map_tile_selection.row * TILES_SIZE,
+      map_rect.x + map_tile_selection.col * TILES_SIZE + TILES_SIZE,
+      map_rect.y + map_tile_selection.row * TILES_SIZE + TILES_SIZE,
+      255, 0, 0, 255
+    );
+  }
+}
+
+void map_select_tile(int screen_x, int screen_y) {
+  map_tile_selection.col = -1 * (map_rect.x - screen_x) / TILES_SIZE;
+  map_tile_selection.row = -1 * (map_rect.y - screen_y) / TILES_SIZE;
+  if (map_tile_selection.col >= map_cols || map_tile_selection.row >= map_rows)
+    map_tile_selection_reset();
+}
+
+void map_tile_selection_reset() {
+  map_tile_selection.row = -1;
+  map_tile_selection.col = -1;
 }
 
 void map_move(int x, int y) {

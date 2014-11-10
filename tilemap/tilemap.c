@@ -96,13 +96,17 @@ int main(int argc, char* args[]) {
     frameStart = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_MOUSEBUTTONDOWN &&
-          event.button.button == SDL_BUTTON_RIGHT) {
-        rightMouseButtonDown = TRUE;
+      if (event.type == SDL_MOUSEBUTTONDOWN) {
+        if (event.button.button == SDL_BUTTON_RIGHT)
+          rightMouseButtonDown = TRUE;
+        else if (event.button.button == SDL_BUTTON_LEFT)
+          map_select_tile(event.button.x, event.button.y);
       }
       if (event.type == SDL_MOUSEBUTTONUP) {
-        rightMouseButtonDown = FALSE;
-        map_move_reset();
+        if (event.button.button == SDL_BUTTON_RIGHT) {
+          rightMouseButtonDown = FALSE;
+          map_move_reset();
+        }
       }
       if (event.type == SDL_MOUSEMOTION) {
         if (rightMouseButtonDown == TRUE) {
