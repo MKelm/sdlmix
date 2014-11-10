@@ -112,6 +112,9 @@ int main(int argc, char* args[]) {
       if (event.type == SDL_KEYDOWN) {
         switch (event.key.keysym.sym) {
           case SDLK_g: map_toggle_grid(); break;
+          case SDLK_PLUS: map_resize(1); break;
+          case SDLK_MINUS: map_resize(-1); break;
+          case SDLK_l: map_load(); break;
           default: ;
         }
       }

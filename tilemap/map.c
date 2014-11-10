@@ -7,19 +7,20 @@
 extern SDL_Surface *screen;
 extern struct st_tile tiles[TILES_MAX];
 
-int map_rows = 12;
-int map_cols = 12;
+int map_rows = 4;
+int map_cols = 4;
 int **map;
 int map_set = FALSE;
 int map_loaded = FALSE;
-int map_show_grid = FALSE;
+int map_show_grid = TRUE;
 
 SDL_Rect map_rect;
 SDL_Rect map_move_rect;
 
 void map_set_map() {
-  if (map_set == TRUE)
+  if (map_set == TRUE) {
     free(map);
+  }
 
   map_rect.x = 0;
   map_rect.y = 0;
@@ -46,7 +47,9 @@ void map_init() {
 
   map_set_map();
   map_move_reset();
+}
 
+void map_load() {
   FILE *fp;
   if ((fp = fopen("map.dat", "r")) != NULL) {
     int row = 0, col = 0;
@@ -67,6 +70,17 @@ void map_init() {
     fclose(fp);
     map_loaded = TRUE;
   }
+}
+
+void map_resize(int direction) {
+  if (direction == 1) {
+    map_rows++;
+    map_cols++;
+  } else if (map_rows > 1 && map_cols > 1) {
+    map_rows--;
+    map_cols--;
+  }
+  map_set_map();
 }
 
 void map_toggle_grid() {
