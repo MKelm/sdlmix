@@ -96,6 +96,10 @@ int main(int argc, char* args[]) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEBUTTONDOWN) {
         mouseButtonDown = TRUE;
+        if (event.button.button == SDL_BUTTON_LEFT &&
+            list_is_scrollbar_active() == FALSE) {
+          list_select_entry_item(event.button.y);
+        }
       }
 
       if (event.type == SDL_MOUSEBUTTONUP) {

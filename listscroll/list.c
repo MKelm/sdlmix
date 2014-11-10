@@ -13,6 +13,7 @@ extern char font_name[128];
 int list_length;
 float list_max_y;
 float list_offset[2];
+int list_selected_item = -1;
 
 struct st_list_entry list[LIST_MAX_ENTRIES];
 extern struct st_loader_list_entry loader_list[LIST_MAX_ENTRIES];
@@ -27,6 +28,7 @@ SDL_Rect scrollbar_slider;
 int scrollbar_active = FALSE;
 
 int image_size = 32;
+int image_margin_top = 2;
 int image_margin_right = 4;
 int title_margin_bottom = 1;
 int text_margin_bottom = 4;
@@ -75,6 +77,8 @@ void list_init() {
   }
   list_max_y = list_length *
     (list[i-1].title->h + title_margin_bottom + list[i-1].text->h + text_margin_bottom);
+
+  list_calc_scrollbar();
 }
 
 void list_change_offset(int up, float val_y) {
@@ -97,7 +101,16 @@ void list_show() {
     offset.x = entry_pos_x;
     offset.y = entry_pos_y;
 
+    if (list_selected_item == i) {
+      boxRGBA(
+        screen, offset.x, offset.y,
+        offset.x + screen_width - 22, offset.y + list[0].title->h + list[0].text->h,
+        0, 120, 180, 255
+      );
+    }
+
     if (list[i].image != NULL) {
+      offset.y = entry_pos_y + image_margin_top;
       SDL_BlitSurface(list[i].image, NULL, screen, &offset);
       offset.x += image_size + image_margin_right;
     } else {
@@ -151,9 +164,11 @@ void list_scrollbar_show() {
   );
 }
 
-int list_set_scrollbar_active(int x, int y) {
+int list_is_scrollbar_active() {
+  return scrollbar_active;
+}
 
-  list_calc_scrollbar();
+int list_set_scrollbar_active(int x, int y) {
   if (x >= scrollbar.x && y >= scrollbar.y &&
       x <= scrollbar.x + scrollbar.w &&
       y <= scrollbar.y + scrollbar.h) {
@@ -164,10 +179,15 @@ int list_set_scrollbar_active(int x, int y) {
   return scrollbar_active;
 }
 
-void list_move_scrollbar_slider(int y) {
+void list_move_scrollbar_slider(int screen_y) {
   float range_step_size = (screen_height) / (list_max_y - screen_height);
-  float new_list_offset = y / range_step_size * -1;
-  list_offset[1] = new_list_offset;
+  list_offset[1] = screen_y / range_step_size * -1;
+}
+
+void list_select_entry_item(int screen_y) {
+  int list_entry_height = list[0].title->h + title_margin_bottom +
+    list[0].text->h + text_margin_bottom;
+  list_selected_item =  (-1 * list_offset[1] + screen_y) / list_entry_height;
 }
 
 void list_clean_up() {
