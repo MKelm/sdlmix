@@ -6,6 +6,14 @@ struct st_list_entry {
   SDL_Surface *image;
 };
 
+struct st_list_options {
+  int length;
+  int selected_item;
+  float offset_x;
+  float offset_y;
+  float length_y;
+};
+
 void list_init();
 void list_change_offset(int up, float val_y);
 void list_show();

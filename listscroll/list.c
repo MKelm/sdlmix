@@ -10,11 +10,7 @@ extern int screen_height;
 extern SDL_Surface *screen;
 extern char font_name[128];
 
-int list_length;
-float list_max_y;
-float list_offset[2];
-int list_selected_item = -1;
-
+struct st_list_options list_options;
 struct st_list_entry list[LIST_MAX_ENTRIES];
 extern struct st_loader_list_entry loader_list[LIST_MAX_ENTRIES];
 
@@ -56,13 +52,13 @@ void list_init() {
   list_title_font = TTF_OpenFont(font_name, 18);
   list_text_font = TTF_OpenFont(font_name, 16);
 
-  list_offset[0] = 0.; // x
-  list_offset[1] = 0.; // y
-
-  list_length = loader_load();
+  list_options.offset_x = 0.; // x
+  list_options.offset_y = 0.; // y
+  list_options.length = loader_load();
+  list_options.selected_item = -1;
 
   int i;
-  for (i = 0; i < list_length; i++) {
+  for (i = 0; i < list_options.length; i++) {
     list[i].title = TTF_RenderText_Solid(
       list_title_font, loader_list[i].title, list_title_color
     );
@@ -75,7 +71,7 @@ void list_init() {
       list[i].image = list_load_image(loader_list[i].image);
     }
   }
-  list_max_y = list_length *
+  list_options.length_y = list_options.length *
     (list[i-1].title->h + title_margin_bottom + list[i-1].text->h + text_margin_bottom);
 
   list_calc_scrollbar();
@@ -83,25 +79,25 @@ void list_init() {
 
 void list_change_offset(int up, float val_y) {
   if (up == TRUE) {
-    if (list_offset[1] + val_y <= 0)
-      list_offset[1] += val_y;
+    if (list_options.offset_y + val_y <= 0)
+      list_options.offset_y += val_y;
   } else {
-    if (list_offset[1] - val_y >= -1 * (list_max_y - screen_height))
-      list_offset[1] -= val_y;
+    if (list_options.offset_y - val_y >= -1 * (list_options.length_y - screen_height))
+      list_options.offset_y -= val_y;
   }
 }
 
 void list_show() {
   int i, entry_pos_x, entry_pos_y;
-  entry_pos_x = (int)list_offset[0];
-  entry_pos_y = (int)list_offset[1];
+  entry_pos_x = (int)list_options.offset_x;
+  entry_pos_y = (int)list_options.offset_y;
 
   SDL_Rect offset;
-  for (i = 0; i < list_length; i++) {
+  for (i = 0; i < list_options.length; i++) {
     offset.x = entry_pos_x;
     offset.y = entry_pos_y;
 
-    if (list_selected_item == i) {
+    if (list_options.selected_item == i) {
       boxRGBA(
         screen, offset.x, offset.y,
         offset.x + screen_width - 22, offset.y + list[0].title->h + list[0].text->h,
@@ -133,8 +129,9 @@ void list_show() {
 void list_calc_scrollbar() {
   int width = 16;
   int height = 16;
-  float range_step_size = (screen_height - (5 + height)) / (list_max_y - screen_height);
-  float step_pos = range_step_size * list_offset[1] * -1;
+  float range_step_size = (screen_height - (5 + height)) /
+    (list_options.length_y - screen_height);
+  float step_pos = range_step_size * list_options.offset_y * -1;
 
   scrollbar_slider.x = screen_width - 19;
   scrollbar_slider.y = 2 + (int)step_pos;
@@ -180,19 +177,19 @@ int list_set_scrollbar_active(int x, int y) {
 }
 
 void list_move_scrollbar_slider(int screen_y) {
-  float range_step_size = (screen_height) / (list_max_y - screen_height);
-  list_offset[1] = screen_y / range_step_size * -1;
+  float range_step_size = (screen_height) / (list_options.length_y - screen_height);
+  list_options.offset_y = screen_y / range_step_size * -1;
 }
 
 void list_select_entry_item(int screen_y) {
   int list_entry_height = list[0].title->h + title_margin_bottom +
     list[0].text->h + text_margin_bottom;
-  list_selected_item =  (-1 * list_offset[1] + screen_y) / list_entry_height;
+  list_options.selected_item =  (-1 * list_options.offset_y + screen_y) / list_entry_height;
 }
 
 void list_clean_up() {
   int i;
-  for (i = 0; i < list_length; i++) {
+  for (i = 0; i < list_options.length; i++) {
     SDL_FreeSurface(list[i].title);
     SDL_FreeSurface(list[i].text);
     SDL_FreeSurface(list[i].image);
