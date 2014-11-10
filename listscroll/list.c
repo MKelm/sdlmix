@@ -52,8 +52,8 @@ void list_init() {
   list_title_font = TTF_OpenFont(font_name, 18);
   list_text_font = TTF_OpenFont(font_name, 16);
 
-  list_options.offset_x = 0.; // x
-  list_options.offset_y = 0.; // y
+  list_options.offset_x = 0.;
+  list_options.offset_y = 0.;
   list_options.length = loader_load();
   list_options.selected_item = -1;
 
@@ -81,9 +81,13 @@ void list_change_offset(int up, float val_y) {
   if (up == TRUE) {
     if (list_options.offset_y + val_y <= 0)
       list_options.offset_y += val_y;
+    else
+      list_options.offset_y = 0;
   } else {
     if (list_options.offset_y - val_y >= -1 * (list_options.length_y - screen_height))
       list_options.offset_y -= val_y;
+    else
+      list_options.offset_y = -1 * (list_options.length_y - screen_height);
   }
 }
 
