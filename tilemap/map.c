@@ -7,26 +7,45 @@
 extern SDL_Surface *screen;
 extern struct st_tile tiles[TILES_MAX];
 
-int map[MAP_MAX_Y][MAP_MAX_X];
+int map_rows = 12;
+int map_cols = 12;
+int **map;
+int map_set = FALSE;
 int map_loaded = FALSE;
 int map_show_grid = FALSE;
 
 SDL_Rect map_rect;
 SDL_Rect map_move_rect;
 
-void map_init() {
-  tiles_init();
+void map_set_map() {
+  if (map_set == TRUE)
+    free(map);
 
   map_rect.x = 0;
   map_rect.y = 0;
-  map_move_reset();
+  map_rect.w = map_cols * TILES_SIZE;
+  map_rect.h = map_rows * TILES_SIZE;
+
+  int i;
+  map = (int **) malloc(map_rows * sizeof(int *));
+  for (i = 0; i < map_rows; i++)
+    map[i] = (int *) malloc(map_cols * sizeof(int));
 
   int row, col;
-  for (row = 0; row < MAP_MAX_Y; row++) {
-    for (col = 0; col < MAP_MAX_X; col++) {
+  for (row = 0; row < map_rows; row++) {
+    for (col = 0; col < map_cols; col++) {
       map[row][col] = -1;
     }
   }
+
+  map_set = TRUE;
+}
+
+void map_init() {
+  tiles_init();
+
+  map_set_map();
+  map_move_reset();
 
   FILE *fp;
   if ((fp = fopen("map.dat", "r")) != NULL) {
@@ -37,7 +56,7 @@ void map_init() {
       col = 0;
       chunk_part = strtok(chunk, " ");
       while (chunk_part != NULL) {
-        if (col < MAP_MAX_X && row < MAP_MAX_Y) {
+        if (col < map_cols && row < map_rows) {
           map[row][col] = atoi(chunk_part);
         }
         chunk_part = strtok(NULL, " ");
@@ -59,9 +78,9 @@ void map_show() {
     SDL_Rect offset;
     int row, col, x, y;
     y = map_rect.y;
-    for (row = 0; row < MAP_MAX_Y; row++) {
+    for (row = 0; row < map_rows; row++) {
       x = map_rect.x;
-      for (col = 0; col < MAP_MAX_X; col++) {
+      for (col = 0; col < map_cols; col++) {
         offset.x = x;
         offset.y = y;
         if (map[row][col] > -1) {
@@ -76,28 +95,28 @@ void map_show() {
   if (map_show_grid == TRUE) {
     int row, col, x, y;
     y = map_rect.y;
-    for (row = 0; row < MAP_MAX_Y; row++) {
+    for (row = 0; row < map_rows; row++) {
       x = map_rect.x;
       lineRGBA(
-        screen, x, y, x + MAP_MAX_X * TILES_SIZE, y,
+        screen, x, y, x + map_rect.w, y,
         255, 255, 255, 255
       );
-      for (col = 0; col < MAP_MAX_X; col++) {
+      for (col = 0; col < map_cols; col++) {
         lineRGBA(
-          screen, x, y, x, y + MAP_MAX_Y * TILES_SIZE - row * TILES_SIZE,
+          screen, x, y, x, y + map_rect.h - row * TILES_SIZE,
           255, 255, 255, 255
         );
         x += TILES_SIZE;
       }
       lineRGBA(
-        screen, x, y, x, y + MAP_MAX_Y * TILES_SIZE - row * TILES_SIZE,
+        screen, x, y, x, y + map_rect.h - row * TILES_SIZE,
         255, 255, 255, 255
       );
       y += TILES_SIZE;
     }
     x = map_rect.x;
     lineRGBA(
-      screen, x, y, x + MAP_MAX_X * TILES_SIZE, y,
+      screen, x, y, x + map_rect.w, y,
       255, 255, 255, 255
     );
   }
@@ -119,4 +138,5 @@ void map_move_reset() {
 
 void map_clean_up() {
   tiles_clean_up();
+  free(map);
 }
