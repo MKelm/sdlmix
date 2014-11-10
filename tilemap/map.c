@@ -21,6 +21,13 @@ void map_init() {
   map_rect.y = 0;
   map_move_reset();
 
+  int row, col;
+  for (row = 0; row < MAP_MAX_Y; row++) {
+    for (col = 0; col < MAP_MAX_X; col++) {
+      map[row][col] = -1;
+    }
+  }
+
   FILE *fp;
   if ((fp = fopen("map.dat", "r")) != NULL) {
     int row = 0, col = 0;
@@ -30,7 +37,9 @@ void map_init() {
       col = 0;
       chunk_part = strtok(chunk, " ");
       while (chunk_part != NULL) {
-        map[row][col] = atoi(chunk_part);
+        if (col < MAP_MAX_X && row < MAP_MAX_Y) {
+          map[row][col] = atoi(chunk_part);
+        }
         chunk_part = strtok(NULL, " ");
         col++;
       }
@@ -55,7 +64,9 @@ void map_show() {
       for (col = 0; col < MAP_MAX_X; col++) {
         offset.x = x;
         offset.y = y;
-        SDL_BlitSurface(tiles[map[row][col]].tile, NULL, screen, &offset);
+        if (map[row][col] > -1) {
+          SDL_BlitSurface(tiles[map[row][col]].tile, NULL, screen, &offset);
+        }
         x += TILES_SIZE;
       }
       y += TILES_SIZE;
