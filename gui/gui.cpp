@@ -232,7 +232,7 @@ class GuiTextWindow: public GuiWindow {
     bool hasText;
   public:
     GuiTextWindow(SDL_Surface *);
-    vector<string> wrapText(const string &, int);
+    vector<string> wrapText(TTF_Font *, const string &, unsigned);
     void setText(string, Uint8, string, Uint8, Uint8, Uint8);
     void unsetText();
     virtual void update();
@@ -241,21 +241,30 @@ class GuiTextWindow: public GuiWindow {
 GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
   hasText = false;
 }
-vector<string> GuiTextWindow::wrapText(const string &text, int line_length) {
-  vector<string> split_text;
-  string::size_type start_point = 0, split_point = 0;
-  while (start_point + line_length < text.size()) {
-    split_point = text.rfind(' ', start_point+line_length);
-    if (split_point < start_point || split_point == string::npos) {
-      split_text.push_back(text.substr(start_point, line_length));
-      start_point += line_length;
-    } else {
-      split_text.push_back(text.substr(start_point, split_point-start_point));
-      start_point = split_point + 1;
+vector<string> GuiTextWindow::wrapText(
+                 TTF_Font *_font, const string &_text, unsigned _maxWidth
+               ) {
+  vector<string> lines;
+  string tmpStr;
+  int linePos, pos, rfindLength, textWidth, textHeight;
+  pos = linePos = 0;
+  while (pos <= _text.length()) {
+    tmpStr = _text.substr(linePos, pos-linePos);
+    if (tmpStr.length() > 0) {
+      TTF_SizeText(_font, tmpStr.c_str(), &textWidth, &textHeight);
+      if (textWidth > _maxWidth) {
+        rfindLength = _text.rfind(' ', pos);
+        tmpStr = _text.substr(linePos, rfindLength - linePos);
+        lines.push_back(tmpStr);
+        linePos = rfindLength + 1;
+        pos = linePos;
+      } else if (pos == _text.length()) {
+        lines.push_back(tmpStr);
+      }
     }
+    pos++;
   }
-  split_text.push_back(text.substr(start_point, line_length));
-  return split_text;
+  return lines;
 }
 void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
                             Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -269,7 +278,7 @@ void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
   SDL_Rect tempTextRect;
   tempTextRect.x = 0;
   tempTextRect.y = 0;
-  vector<string> lines = wrapText(_text, 20);
+  vector<string> lines = wrapText(font, _text, innerRect->w);
   for (Uint8 i = 0; i < lines.size(); i++) {
     if (i > 0)
       SDL_FreeSurface(text);
@@ -313,7 +322,7 @@ int main (int argc, char *argv[]) {
   gui->setWindowBorder(5, 255, 255, 255);
   gui->addTitleFrame(255, 255, 255);
   gui->setText(
-    "Lorem ipsum dolor sit amet, nam et detracto contentiones.",
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     24, "mkds.ttf", 255, 255, 255
   );
   gui->bgFill(120, 120, 120);
