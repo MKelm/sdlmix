@@ -228,10 +228,12 @@ GuiWindow::~GuiWindow() {
 // ----> GUI TEXT
 class GuiTextWindow: public GuiWindow {
   protected:
+    Uint8 textPadding;
     SDL_Surface *text;
     bool hasText;
   public:
     GuiTextWindow(SDL_Surface *);
+    void setTextPadding(Uint8);
     vector<string> wrapText(TTF_Font *, const string &, unsigned);
     void setText(string, Uint8, string, Uint8, Uint8, Uint8);
     void unsetText();
@@ -240,6 +242,12 @@ class GuiTextWindow: public GuiWindow {
 };
 GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
   hasText = false;
+}
+void GuiTextWindow::setTextPadding(Uint8 _padding) {
+  innerRect->w -= _padding * 2;
+  innerRect->h -= _padding * 2;
+  innerRect->x += _padding;
+  innerRect->y += _padding;
 }
 vector<string> GuiTextWindow::wrapText(
                  TTF_Font *_font, const string &_text, unsigned _maxWidth
@@ -321,6 +329,7 @@ int main (int argc, char *argv[]) {
   gui->addWindowFrame(screen->w / 2 - 150, screen->h / 2 - 150, 300, 300, 0, 0, 0);
   gui->setWindowBorder(5, 255, 255, 255);
   gui->addTitleFrame(255, 255, 255);
+  gui->setTextPadding(5);
   gui->setText(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
