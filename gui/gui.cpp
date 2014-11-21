@@ -5,13 +5,12 @@
 #include <iostream>
 using namespace std;
 
+// ----> GUI BGCOLOR
 struct stGuiRgbColor {
   Uint8 r;
   Uint8 g;
   Uint8 b;
 };
-
-// ----> GUI BGCOLOR
 class GuiBgColor {
   protected:
     bool hasBgColor;
@@ -176,7 +175,7 @@ void GuiScreen::update() {
       SDL_BlitSurface((*it)->getSurface(), NULL, screen, (*it)->getRect());
     }
   }
-  SDL_Flip(screen);
+  SDL_UpdateRect(screen, 0, 0, 0, 0);
 }
 GuiScreen::~GuiScreen() {
   vector<GuiFrame *>::iterator it;
@@ -239,6 +238,7 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
     titleFrameIdx = frames.size() - 1;
     frames[titleFrameIdx]->setBgColor(_r, _g, _b);
     innerRect->y += titleText->h + windowBorderWidth;
+    innerRect->h -= titleText->h + windowBorderWidth;
   }
 }
 void GuiWindow::update() {
@@ -247,7 +247,7 @@ void GuiWindow::update() {
     SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
     SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
     SDL_BlitSurface(titleFrameSurface, NULL, screen, frames[titleFrameIdx]->getRect());
-    SDL_Flip(screen);
+    SDL_UpdateRect(screen, 0, 0, 0, 0);
   }
 }
 void GuiWindow::unsetTitleText() {
@@ -260,7 +260,7 @@ GuiWindow::~GuiWindow() {
   unsetTitleText();
 }
 
-// ----> GUI TEXT
+// ----> GUI TEXT WINDOW
 class GuiTextWindow: public GuiWindow {
   protected:
     Uint8 textPadding;
@@ -344,11 +344,79 @@ void GuiTextWindow::update() {
   GuiWindow::update();
   if (hasText == true) {
     SDL_BlitSurface(text, NULL, screen, innerRect);
+    SDL_UpdateRect(screen, 0, 0, 0, 0);
   }
-  SDL_Flip(screen);
 }
 GuiTextWindow::~GuiTextWindow() {
   unsetText();
+}
+
+// ----> GUI LIST WINDOW
+struct stGuiListEntry {
+  SDL_Surface *image;
+  SDL_Surface *titleText;
+  SDL_Surface *text;
+};
+class GuiListWindow: public GuiWindow {
+  protected:
+    Uint8 imageSize;
+    vector<stGuiListEntry> entries;
+    Uint16 listFrameIdx;
+    string fontFile;
+    Uint8 fontSizeTitle;
+    Uint8 fontSizeText;
+    struct stGuiRgbColor fontColor;
+  public:
+    GuiListWindow(SDL_Surface *);
+    void addListFrame(int, int, int);
+    void setTextOptions(string, Uint8, Uint8, Uint8, Uint8, Uint8);
+    void addEntry(string, string, string);
+    virtual void update();
+    virtual ~GuiListWindow();
+};
+GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
+}
+void GuiListWindow::addListFrame(int _r, int _g, int _b) {
+  addFrame(innerRect->x, innerRect->y, innerRect->w, innerRect->h);
+  listFrameIdx = frames.size() - 1;
+  frames[listFrameIdx]->setBgColor(_r, _g, _b);
+}
+void GuiListWindow::setTextOptions(string _fontFile,
+                                   Uint8 _fontSizeTitle, Uint8 _fontSizeText,
+                                   Uint8 _r, Uint8 _g, Uint8 _b) {
+  fontFile = _fontFile;
+  fontSizeTitle = _fontSizeTitle;
+  fontSizeText = _fontSizeText;
+  fontColor.r = _r;
+  fontColor.g = _g;
+  fontColor.b = _b;
+}
+void GuiListWindow::addEntry(string _image, string _title, string _text) {
+  stGuiListEntry tmp;
+  TTF_Font *titleFont = TTF_OpenFont(fontFile.c_str(), fontSizeTitle);
+  TTF_Font *textFont = TTF_OpenFont(fontFile.c_str(), fontSizeText);
+  SDL_Color sdlFontColor = { fontColor.r, fontColor.g, fontColor.b };
+  tmp.titleText = TTF_RenderText_Blended(titleFont, _title.c_str(), sdlFontColor);
+  tmp.text = TTF_RenderText_Blended(textFont, _title.c_str(), sdlFontColor);
+  tmp.image = NULL; // todo
+  TTF_CloseFont(titleFont);
+  TTF_CloseFont(textFont);
+  entries.push_back(tmp);
+}
+void GuiListWindow::update() {
+  if (entries.size() > 0) {
+    SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
+    SDL_Rect tmpRect;
+    tmpRect.x = 0;
+    tmpRect.y = 0;
+    for (Uint8 i = 0; i < entries.size(); i++) {
+      SDL_BlitSurface(entries[i].titleText, NULL, listFrameSurface, &tmpRect);
+      tmpRect.y += entries[i].titleText->h;
+    }
+  }
+  GuiWindow::update();
+}
+GuiListWindow::~GuiListWindow() {
 }
 
 // ----> MAIN
@@ -359,18 +427,34 @@ int main (int argc, char *argv[]) {
   SDL_WM_SetCaption("SDL GUI", NULL);
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
-  GuiTextWindow *gui = new GuiTextWindow(screen);
-  gui->setTitle("TEST WINDOW", 20, "libertysans.ttf", 0, 0, 0);
-  gui->addWindowFrame(screen->w / 2 - 150, screen->h / 2 - 150, 300, 300, 0, 0, 0);
-  gui->setWindowBorder(5, 255, 255, 255);
-  gui->addTitleFrame(255, 255, 255);
-  gui->setTextPadding(5);
-  gui->setText(
+  GuiTextWindow *guiTW = new GuiTextWindow(screen);
+  guiTW->setTitle("TEST TEXT WINDOW", 20, "libertysans.ttf", 0, 0, 0);
+  guiTW->addWindowFrame(10, 10, 300, 300, 0, 0, 0);
+  guiTW->setWindowBorder(5, 255, 255, 255);
+  guiTW->addTitleFrame(255, 255, 255);
+  guiTW->setTextPadding(5);
+  guiTW->setText(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
   );
-  gui->setBgColor(120, 120, 120);
-  gui->update();
+  guiTW->setBgColor(120, 120, 120);
+  guiTW->update();
+
+  GuiListWindow *guiLW = new GuiListWindow(screen);
+  guiLW->setTitle("TEST LIST WINDOW", 20, "libertysans.ttf", 0, 0, 0);
+  guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 0);
+  guiLW->setWindowBorder(5, 255, 255, 255);
+  guiLW->addTitleFrame(255, 255, 255);
+  guiLW->addListFrame(-1, -1, -1);
+  guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
+  guiLW->addEntry("", "Title 1", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("", "Title 2", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("", "Title 3", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("", "Title 4", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("", "Title 5", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("", "Title 6", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("", "Title 7", "Lorem ipsum dolor sit amet.");
+  guiLW->update();
 
   SDL_Event event;
   bool quit = false;
@@ -383,7 +467,8 @@ int main (int argc, char *argv[]) {
         case SDL_KEYDOWN:
           switch (event.key.keysym.sym) {
             case SDLK_r:
-              gui->update();
+              guiTW->update();
+              guiLW->update();
               break;
             case SDLK_ESCAPE:
             case SDLK_q:
@@ -397,7 +482,8 @@ int main (int argc, char *argv[]) {
     }
   }
 
-  delete gui;
+  delete guiTW;
+  delete guiLW;
   TTF_Quit();
   SDL_Quit();
   return 0;
