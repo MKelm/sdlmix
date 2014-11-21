@@ -22,15 +22,15 @@ class GuiFrame {
     } borderColor;
   public:
     GuiFrame(Uint8);
-    virtual void set(Uint16, Uint16, Uint16, Uint16);
-    virtual void setBorder(Uint8, Uint8, Uint8, Uint8);
-    virtual SDL_Rect *getRect();
-    virtual SDL_Rect *getInnerRect();
-    virtual SDL_Surface *getSurface();
-    virtual void bgFill(Uint8, Uint8, Uint8);
-    virtual void drawBorder();
-    virtual void unset();
-    virtual ~GuiFrame();
+    void set(Uint16, Uint16, Uint16, Uint16);
+    void setBorder(Uint8, Uint8, Uint8, Uint8);
+    SDL_Rect *getRect();
+    SDL_Rect *getInnerRect();
+    SDL_Surface *getSurface();
+    void bgFill(Uint8, Uint8, Uint8);
+    void drawBorder();
+    void unset();
+    ~GuiFrame();
 };
 GuiFrame::GuiFrame(Uint8 _bpp) {
   bpp = _bpp;
@@ -117,8 +117,8 @@ class GuiScreen {
     vector<GuiFrame *> frames;
   public:
     GuiScreen(SDL_Surface *);
-    virtual GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
-    virtual void bgFill(Uint8, Uint8, Uint8);
+    GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
+    void bgFill(Uint8, Uint8, Uint8);
     virtual void update();
     virtual ~GuiScreen();
 };
@@ -162,6 +162,7 @@ class GuiWindow: public GuiScreen {
     int titleFrameIdx;
     SDL_Surface *titleText;
     bool hasTitleText;
+    SDL_Rect *innerRect;
   public:
     GuiWindow(SDL_Surface *);
     void setTitle(string, Uint8, string, Uint8, Uint8, Uint8);
@@ -191,19 +192,21 @@ void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
   addFrame(_x, _y, _w, _h);
   windowFrameIdx = frames.size() - 1;
   frames[windowFrameIdx]->bgFill(_r, _g, _b);
+  innerRect = frames[windowFrameIdx]->getInnerRect();
 }
 void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   if (windowFrameIdx > -1) {
     windowBorderWidth = _width;
     frames[windowFrameIdx]->setBorder(_width, _r, _g, _b);
+    innerRect = frames[windowFrameIdx]->getInnerRect();
   }
 }
 void GuiWindow::addTitleFrame(Uint8 _r, Uint8 _g, Uint8 _b) {
   if (hasTitleText == true && windowFrameIdx > -1) {
-    SDL_Rect *windowRect = frames[windowFrameIdx]->getInnerRect();
-    addFrame(windowRect->x, windowRect->y, windowRect->w, titleText->h + windowBorderWidth);
+    addFrame(innerRect->x, innerRect->y, innerRect->w, titleText->h + windowBorderWidth);
     titleFrameIdx = frames.size() - 1;
     frames[titleFrameIdx]->bgFill(_r, _g, _b);
+    innerRect->y += titleText->h + windowBorderWidth;
   }
 }
 void GuiWindow::update() {
