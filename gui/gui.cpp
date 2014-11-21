@@ -169,9 +169,9 @@ class GuiWindow: public GuiScreen {
     void addWindowFrame(Uint16, Uint16, Uint16, Uint16, Uint8, Uint8, Uint8);
     void setWindowBorder(Uint8, Uint8, Uint8, Uint8);
     void addTitleFrame(Uint8, Uint8, Uint8);
-    void update();
     void unsetTitleText();
-    ~GuiWindow();
+    virtual void update();
+    virtual ~GuiWindow();
 };
 GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiScreen(_screen) {
   hasTitleText = false;
@@ -225,6 +225,73 @@ GuiWindow::~GuiWindow() {
   unsetTitleText();
 }
 
+// ----> GUI TEXT
+class GuiTextWindow: public GuiWindow {
+  protected:
+    SDL_Surface *text;
+    bool hasText;
+  public:
+    GuiTextWindow(SDL_Surface *);
+    vector<string> wrapText(const string &, int);
+    void setText(string, Uint8, string, Uint8, Uint8, Uint8);
+    void unsetText();
+    virtual void update();
+    virtual ~GuiTextWindow();
+};
+GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
+  hasText = false;
+}
+vector<string> GuiTextWindow::wrapText(const string &text, int line_length) {
+
+  vector<string> split_text;
+  string::size_type start_point = 0, split_point = 0;
+
+  while (start_point + line_length < text.size()) {
+    split_point = text.rfind(' ', start_point+line_length);
+
+    if (split_point < start_point || split_point == string::npos) {
+      split_text.push_back( text.substr(start_point, line_length) );
+      start_point += line_length;
+    } else {
+      split_text.push_back( text.substr(start_point, split_point-start_point) );
+      start_point = split_point + 1;
+    }
+  }
+
+  split_text.push_back(text.substr(start_point, line_length));
+  return split_text;
+}
+void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
+                            Uint8 _r, Uint8 _g, Uint8 _b) {
+  unsetText();
+  TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
+  SDL_Color tmpFontColor = { _r, _g, _b };
+
+  vector<string> lines = wrapText(_text, 20);
+  text = TTF_RenderText_Solid(font, lines[0].c_str(), tmpFontColor);
+  /*for (Uint8 i = 0; i < lines.size(); i++) {
+    // todo multiline surface
+  };*/
+  TTF_CloseFont(font);
+  hasText = true;
+}
+void GuiTextWindow::unsetText() {
+  if (hasText == true) {
+    SDL_FreeSurface(text);
+    hasText = false;
+  }
+}
+void GuiTextWindow::update() {
+  GuiWindow::update();
+  if (hasText == true) {
+    SDL_BlitSurface(text, NULL, screen, innerRect);
+  }
+  SDL_Flip(screen);
+}
+GuiTextWindow::~GuiTextWindow() {
+  unsetText();
+}
+
 // ----> MAIN
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
@@ -233,11 +300,15 @@ int main (int argc, char *argv[]) {
   SDL_WM_SetCaption("SDL GUI", NULL);
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
-  GuiWindow *gui = new GuiWindow(screen);
+  GuiTextWindow *gui = new GuiTextWindow(screen);
   gui->setTitle("TEST WINDOW", 24, "mkds.ttf", 0, 0, 0);
   gui->addWindowFrame(screen->w / 2 - 150, screen->h / 2 - 150, 300, 300, 0, 0, 0);
   gui->setWindowBorder(5, 255, 255, 255);
   gui->addTitleFrame(255, 255, 255);
+  gui->setText(
+    "Lorem ipsum dolor sit amet, nam et detracto contentiones. Eirmod accusamus has in, fastidii liberavisse sit ad. Postea constituto qui te. In laudem semper dolores usu, sed id meis expetenda salutatus, sea nisl modus iudicabit ea. No eum cibo dicunt.",
+    24, "mkds.ttf", 255, 255, 255
+  );
   gui->bgFill(120, 120, 120);
   gui->update();
 
