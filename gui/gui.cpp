@@ -183,7 +183,7 @@ void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
   unsetTitleText();
   TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
   SDL_Color tmpFontColor = { _r, _g, _b };
-  titleText = TTF_RenderText_Solid(font, _title.c_str(), tmpFontColor);
+  titleText = TTF_RenderText_Blended(font, _title.c_str(), tmpFontColor);
   TTF_CloseFont(font);
   hasTitleText = true;
 }
@@ -282,7 +282,7 @@ void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
   for (Uint8 i = 0; i < lines.size(); i++) {
     if (i > 0)
       SDL_FreeSurface(text);
-    text = TTF_RenderText_Solid(font, lines[i].c_str(), tmpFontColor);
+    text = TTF_RenderText_Blended(font, lines[i].c_str(), tmpFontColor);
     SDL_BlitSurface(text, NULL, tempText, &tempTextRect);
     tempTextRect.y += text->h;
   };
