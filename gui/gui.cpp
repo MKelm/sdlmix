@@ -2,6 +2,7 @@
 #include "SDL/SDL_ttf.h"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_gfxPrimitives.h"
+#include <map>
 #include <vector>
 #include <iostream>
 using namespace std;
@@ -30,6 +31,39 @@ void GuiBgColor::setBgColor(int _r, int _g, int _b) {
     bgColor.b = _b;
     hasBgColor = true;
   }
+}
+
+// ----> GUI EVENT AREAS
+class GuiEventAreas {
+  protected:
+    map<string, SDL_Rect> areas;
+  public:
+    void add(string, Uint16, Uint16, Uint16, Uint16);
+    void update(string, Uint16, Uint16);
+    bool isEventInArea(string, Uint16, Uint16);
+};
+void GuiEventAreas::add(
+         string _name, Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h
+       ) {
+  SDL_Rect area;
+  area.x = _x;
+  area.y = _y;
+  area.w = _w;
+  area.w = _h;
+  areas[_name] = area;
+}
+void GuiEventAreas::update(string _name, Uint16 _x, Uint16 _y) {
+  areas[_name].x = _x;
+  areas[_name].y = _y;
+}
+bool GuiEventAreas::isEventInArea(string _name, Uint16 _eventX, Uint16 _eventY) {
+  if (_eventX > areas[_name].x &&
+      _eventX < areas[_name].x + areas[_name].w &&
+      _eventY > areas[_name].y &&
+      _eventY < areas[_name].y + areas[_name].w) {
+    return true;
+  }
+  return false;
 }
 
 // ----> GUI FRAME
@@ -142,6 +176,7 @@ class GuiScreen: public GuiBgColor {
     SDL_Surface *screen;
     vector<GuiFrame *> frames;
   public:
+    GuiEventAreas eventAreas;
     GuiScreen(SDL_Surface *);
     GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
     void bgFill();
@@ -206,7 +241,6 @@ class GuiWindow: public GuiScreen {
     void addTitleFrame(int, int, int);
     void unsetTitleText();
     void unsetCloseBtnText();
-    SDL_Rect getScreenCloseBtnRect();
     virtual void update();
     virtual ~GuiWindow();
 };
@@ -227,7 +261,6 @@ void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
 }
 void GuiWindow::setCloseBtn(Uint8 _fontSize, string _fontFile,
                             Uint8 _r, Uint8 _g, Uint8 _b) {
-  cout << "test 1" << endl;
   unsetCloseBtnText();
   TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
   SDL_Color tmpFontColor = { _r, _g, _b };
@@ -262,6 +295,13 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
       closeBtnRect.y = 0;
       closeBtnRect.w = closeBtnText->w;
       closeBtnRect.h = closeBtnText->h;
+      SDL_Rect *frameRect = frames[titleFrameIdx]->getRect();
+      eventAreas.add(
+        "windowCloseButton",
+        frameRect->x + closeBtnRect.x,
+        frameRect->y + closeBtnRect.y,
+        closeBtnRect.w, closeBtnRect.h
+      );
     }
   }
 }
@@ -274,18 +314,15 @@ void GuiWindow::update() {
     }
     if (hasCloseBtnText == true) {
       SDL_BlitSurface(closeBtnText, NULL, titleFrameSurface, &closeBtnRect);
+      SDL_Rect *frameRect = frames[titleFrameIdx]->getRect();
+      eventAreas.update(
+        "windowCloseButton",
+        frameRect->x + closeBtnRect.x,
+        frameRect->y + closeBtnRect.y
+      );
     }
     SDL_BlitSurface(titleFrameSurface, NULL, screen, frames[titleFrameIdx]->getRect());
   }
-}
-SDL_Rect GuiWindow::getScreenCloseBtnRect() {
-  SDL_Rect *frameRect = frames[titleFrameIdx]->getRect();
-  SDL_Rect screenCloseBtnRect;
-  screenCloseBtnRect.x = closeBtnRect.x + frameRect->x;
-  screenCloseBtnRect.y = closeBtnRect.y + frameRect->y;
-  screenCloseBtnRect.w = closeBtnRect.w;
-  screenCloseBtnRect.h = closeBtnRect.h;
-  return screenCloseBtnRect;
 }
 void GuiWindow::unsetTitleText() {
   if (hasTitleText == true) {
@@ -520,9 +557,6 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
   guiLW->update();
 
-  SDL_Rect guiTWCloseBtnRect = guiTW->getScreenCloseBtnRect();
-  SDL_Rect guiLWCloseBtnRect = guiLW->getScreenCloseBtnRect();
-
   SDL_UpdateRect(screen, 0, 0, 0, 0);
 
   SDL_Event event;
@@ -531,9 +565,13 @@ int main (int argc, char *argv[]) {
     if (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEBUTTONDOWN &&
           event.button.button == SDL_BUTTON_LEFT) {
-        if (isClickOnCloseBtn(event.button.x, event.button.y, &guiTWCloseBtnRect) == true) {
+        if (guiTW->eventAreas.isEventInArea(
+              "windowCloseButton", event.button.x, event.button.y) == true
+           ) {
           cout << "Text Window Close Button Event" << endl;
-        } else if (isClickOnCloseBtn(event.button.x, event.button.y, &guiLWCloseBtnRect) == true) {
+        } else if (guiLW->eventAreas.isEventInArea(
+                     "windowCloseButton", event.button.x, event.button.y) == true
+                  ) {
           cout << "List Window Close Button Event" << endl;
         }
       }
