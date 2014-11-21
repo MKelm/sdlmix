@@ -1,8 +1,6 @@
 #include "SDL/SDL.h"
+#include "SDL/SDL_ttf.h"
 #include "SDL/SDL_gfxPrimitives.h"
-#include <ctime>
-#include <cmath>
-#include <random>
 #include <list>
 #include <iostream>
 using namespace std;
@@ -11,11 +9,11 @@ class GuiBase {
   protected:
     SDL_Surface *screen;
     SDL_Surface *frame;
+    SDL_Rect frameRect;
     bool hasFrame;
   public:
-    SDL_Rect frameRect;
     GuiBase(SDL_Surface *);
-    virtual void setFrame();
+    virtual void setFrame(Uint16, Uint16, Uint16, Uint16);
     virtual void bgFillFrame(Uint8, Uint8, Uint8);
     virtual void bgFillScreen(Uint8, Uint8, Uint8);
     virtual void update();
@@ -27,8 +25,12 @@ GuiBase::GuiBase(SDL_Surface *_screen) {
   screen = _screen;
   hasFrame = false;
 }
-void GuiBase::setFrame() {
+void GuiBase::setFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   unsetFrame();
+  frameRect.x = _x;
+  frameRect.y = _y;
+  frameRect.w = _w;
+  frameRect.h = _h;
   frame = SDL_CreateRGBSurface(
     0, frameRect.w, frameRect.h, screen->format->BytesPerPixel * 8, 0, 0, 0, 0
   );
@@ -63,36 +65,46 @@ GuiBase::~GuiBase() {
 class GuiWindow: public GuiBase {
   protected:
     SDL_Surface *titleFrame;
-    bool hasTitleFrame;
     SDL_Rect titleFrameRect;
+    bool hasTitleFrame;
+    SDL_Surface *titleText;
+    bool hasTitleText;
   public:
-    string title;
-    struct stTitleColor {
-      Uint8 r;
-      Uint8 g;
-      Uint8 b;
-    } titleColor;
     GuiWindow(SDL_Surface *);
+    void setTitle(string, Uint8, Uint8, Uint8, Uint8, string);
     void setTitleFrame();
     void bgFillTitleFrame(Uint8, Uint8, Uint8);
     void update();
+    void unsetTitleText();
     void unsetTitleFrame();
     ~GuiWindow();
 };
 GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiBase(_screen) {
   hasTitleFrame = false;
+  hasTitleText = false;
+}
+void GuiWindow::setTitle(string _title, Uint8 _r, Uint8 _g, Uint8 _b,
+                         Uint8 _fontSize, string _fontFile) {
+  unsetTitleText();
+  TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
+  SDL_Color tmpFontColor = { _r, _g, _b };
+  titleText = TTF_RenderText_Solid(font, _title.c_str(), tmpFontColor);
+  TTF_CloseFont(font);
+  hasTitleText = true;
 }
 void GuiWindow::setTitleFrame() {
-  unsetTitleFrame();
-  titleFrameRect.w = (hasFrame == true) ? frameRect.w : screen->w;
-  titleFrameRect.h = 20; // todo: use font size / height here
-  titleFrameRect.x = 0;
-  titleFrameRect.y = 0;
-  titleFrame = SDL_CreateRGBSurface(
-    0, titleFrameRect.w, titleFrameRect.h,
-    screen->format->BytesPerPixel * 8, 0, 0, 0, 0
-  );
-  hasTitleFrame = true;
+  if (hasTitleText == true) {
+    unsetTitleFrame();
+    titleFrameRect.w = (hasFrame == true) ? frameRect.w : screen->w;
+    titleFrameRect.h = titleText->h;
+    titleFrameRect.x = 0;
+    titleFrameRect.y = 0;
+    titleFrame = SDL_CreateRGBSurface(
+      0, titleFrameRect.w, titleFrameRect.h,
+      screen->format->BytesPerPixel * 8, 0, 0, 0, 0
+    );
+    hasTitleFrame = true;
+  }
 }
 void GuiWindow::bgFillTitleFrame(Uint8 _r, Uint8 _g, Uint8 _b) {
   SDL_FillRect(
@@ -108,7 +120,20 @@ void GuiWindow::update() {
       SDL_BlitSurface(titleFrame, NULL, screen, &titleFrameRect);
     }
   }
+  if (hasTitleText == true) {
+    if (hasFrame == true) {
+      SDL_BlitSurface(titleText, NULL, frame, NULL);
+    } else {
+      SDL_BlitSurface(titleText, NULL, screen, NULL);
+    }
+  }
   GuiBase::update();
+}
+void GuiWindow::unsetTitleText() {
+  if (hasTitleText == true) {
+    SDL_FreeSurface(titleText);
+    hasTitleText = false;
+  }
 }
 void GuiWindow::unsetTitleFrame() {
   if (hasTitleFrame == true) {
@@ -118,25 +143,22 @@ void GuiWindow::unsetTitleFrame() {
 }
 GuiWindow::~GuiWindow() {
   unsetTitleFrame();
+  unsetTitleText();
 }
 
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
+  TTF_Init();
 
   SDL_WM_SetCaption("SDL GUI", NULL);
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
   GuiWindow *gui = new GuiWindow(screen);
-  gui->frameRect.x = screen->w / 2 - 150;
-  gui->frameRect.y = screen->h / 2 - 150;
-  gui->frameRect.w = 300;
-  gui->frameRect.h = 300;
-  gui->setFrame();
+  gui->setFrame(
+    screen->w / 2 - 150, screen->h / 2 - 150, 300, 300
+  );
 
-  gui->title = "Test Window";
-  gui->titleColor.r = 0;
-  gui->titleColor.g = 0;
-  gui->titleColor.b = 0;
+  gui->setTitle("Test Window", 0, 0, 0, 24, "mkds.ttf");
   gui->setTitleFrame();
 
   gui->bgFillScreen(255, 0, 0);
@@ -171,6 +193,7 @@ int main (int argc, char *argv[]) {
   }
 
   delete gui;
+  TTF_Quit();
   SDL_Quit();
   return 0;
 }
