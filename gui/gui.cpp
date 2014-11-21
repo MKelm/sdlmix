@@ -49,7 +49,7 @@ void GuiEventAreas::add(
   area.x = _x;
   area.y = _y;
   area.w = _w;
-  area.w = _h;
+  area.h = _h;
   areas[_name] = area;
 }
 void GuiEventAreas::update(string _name, Uint16 _x, Uint16 _y) {
@@ -289,17 +289,21 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
     frames[titleFrameIdx]->setBgColor(_r, _g, _b);
     innerRect->y += titleText->h + windowBorderWidth;
     innerRect->h -= titleText->h + windowBorderWidth;
+    SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
+    eventAreas.add(
+      "windowMoveBar", titleFrameRect->x, titleFrameRect->y,
+      titleFrameRect->w, titleFrameRect->h
+    );
     if (hasCloseBtnText == true) {
       SDL_Surface *frameSurface = frames[titleFrameIdx]->getSurface();
       closeBtnRect.x = frameSurface->w - closeBtnText->w;
       closeBtnRect.y = 0;
       closeBtnRect.w = closeBtnText->w;
       closeBtnRect.h = closeBtnText->h;
-      SDL_Rect *frameRect = frames[titleFrameIdx]->getRect();
       eventAreas.add(
         "windowCloseButton",
-        frameRect->x + closeBtnRect.x,
-        frameRect->y + closeBtnRect.y,
+        titleFrameRect->x + closeBtnRect.x,
+        titleFrameRect->y + closeBtnRect.y,
         closeBtnRect.w, closeBtnRect.h
       );
     }
@@ -309,19 +313,22 @@ void GuiWindow::update() {
   GuiScreen::update();
   if (titleFrameIdx > -1) {
     SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
+    SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
+    eventAreas.update(
+      "windowMoveBar", titleFrameRect->x, titleFrameRect->y
+    );
     if (hasTitleText == true) {
       SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
     }
     if (hasCloseBtnText == true) {
       SDL_BlitSurface(closeBtnText, NULL, titleFrameSurface, &closeBtnRect);
-      SDL_Rect *frameRect = frames[titleFrameIdx]->getRect();
       eventAreas.update(
         "windowCloseButton",
-        frameRect->x + closeBtnRect.x,
-        frameRect->y + closeBtnRect.y
+        titleFrameRect->x + closeBtnRect.x,
+        titleFrameRect->y + closeBtnRect.y
       );
     }
-    SDL_BlitSurface(titleFrameSurface, NULL, screen, frames[titleFrameIdx]->getRect());
+    SDL_BlitSurface(titleFrameSurface, NULL, screen, titleFrameRect);
   }
 }
 void GuiWindow::unsetTitleText() {
@@ -561,10 +568,12 @@ int main (int argc, char *argv[]) {
 
   SDL_Event event;
   bool quit = false;
+  bool lMouseBtnDown = false;
   while (quit == false) {
     if (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEBUTTONDOWN &&
           event.button.button == SDL_BUTTON_LEFT) {
+        lMouseBtnDown = true;
         if (guiTW->eventAreas.isEventInArea(
               "windowCloseButton", event.button.x, event.button.y) == true
            ) {
@@ -574,6 +583,20 @@ int main (int argc, char *argv[]) {
                   ) {
           cout << "List Window Close Button Event" << endl;
         }
+      }
+      if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
+        if (guiTW->eventAreas.isEventInArea(
+              "windowMoveBar", event.button.x, event.button.y) == true
+           ) {
+          cout << "Text Window Move" << endl;
+        } else if (guiLW->eventAreas.isEventInArea(
+                    "windowMoveBar", event.button.x, event.button.y) == true
+                  ) {
+          cout << "List Window Move" << endl;
+        }
+      }
+      if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+        lMouseBtnDown = false;
       }
       switch (event.type) {
         case SDL_QUIT:
