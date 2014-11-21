@@ -401,6 +401,7 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
   entries.push_back(tmp);
 }
 void GuiListWindow::update() {
+  GuiWindow::update();
   if (entries.size() > 0) {
     SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
     SDL_Rect tmpRect;
@@ -409,9 +410,9 @@ void GuiListWindow::update() {
     for (Uint8 i = 0; i < entries.size(); i++) {
       SDL_BlitSurface(entries[i].titleText, NULL, listFrameSurface, &tmpRect);
       tmpRect.y += entries[i].titleText->h;
+      SDL_BlitSurface(listFrameSurface, NULL, screen, frames[listFrameIdx]->getRect());
     }
   }
-  GuiWindow::update();
 }
 GuiListWindow::~GuiListWindow() {
 }
@@ -442,7 +443,7 @@ int main (int argc, char *argv[]) {
   guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 0);
   guiLW->setWindowBorder(5, 255, 255, 255);
   guiLW->addTitleFrame(255, 255, 255);
-  guiLW->addListFrame(-1, -1, -1);
+  guiLW->addListFrame(0, 0, 0);
   guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
   guiLW->addEntry("", "Title 1", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("", "Title 2", "Lorem ipsum dolor sit amet.");
