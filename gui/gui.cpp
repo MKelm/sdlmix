@@ -1,5 +1,6 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_ttf.h"
+#include "SDL/SDL_image.h"
 #include "SDL/SDL_gfxPrimitives.h"
 #include <vector>
 #include <iostream>
@@ -394,8 +395,8 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
   TTF_Font *textFont = TTF_OpenFont(fontFile.c_str(), fontSizeText);
   SDL_Color sdlFontColor = { fontColor.r, fontColor.g, fontColor.b };
   tmp.titleText = TTF_RenderText_Blended(titleFont, _title.c_str(), sdlFontColor);
-  tmp.text = TTF_RenderText_Blended(textFont, _title.c_str(), sdlFontColor);
-  tmp.image = NULL; // todo
+  tmp.text = TTF_RenderText_Blended(textFont, _text.c_str(), sdlFontColor);
+  tmp.image = (_image.length() > 0) ? IMG_Load(_image.c_str()) : NULL;
   TTF_CloseFont(titleFont);
   TTF_CloseFont(textFont);
   entries.push_back(tmp);
@@ -408,8 +409,15 @@ void GuiListWindow::update() {
     tmpRect.x = 0;
     tmpRect.y = 0;
     for (Uint8 i = 0; i < entries.size(); i++) {
+      tmpRect.x = 0;
+      if (entries[i].image != NULL) {
+        SDL_BlitSurface(entries[i].image, NULL, listFrameSurface, &tmpRect);
+        tmpRect.x += entries[i].image->w;
+      }
       SDL_BlitSurface(entries[i].titleText, NULL, listFrameSurface, &tmpRect);
       tmpRect.y += entries[i].titleText->h;
+      SDL_BlitSurface(entries[i].text, NULL, listFrameSurface, &tmpRect);
+      tmpRect.y += entries[i].text->h;
       SDL_BlitSurface(listFrameSurface, NULL, screen, frames[listFrameIdx]->getRect());
     }
   }
@@ -445,13 +453,16 @@ int main (int argc, char *argv[]) {
   guiLW->addTitleFrame(255, 255, 255);
   guiLW->addListFrame(0, 0, 0);
   guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
-  guiLW->addEntry("", "Title 1", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("", "Title 2", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("", "Title 3", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("", "Title 4", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("", "Title 5", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("", "Title 6", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("", "Title 7", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 1", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 2", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 3", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 4", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 5", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 6", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 7", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 8", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
   guiLW->update();
 
   SDL_UpdateRect(screen, 0, 0, 0, 0);
