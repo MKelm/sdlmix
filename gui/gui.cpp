@@ -193,19 +193,26 @@ class GuiWindow: public GuiScreen {
     int titleFrameIdx;
     SDL_Surface *titleText;
     bool hasTitleText;
+    SDL_Surface *closeBtnText;
+    bool hasCloseBtnText;
+    SDL_Rect closeBtnRect;
     SDL_Rect *innerRect;
   public:
     GuiWindow(SDL_Surface *);
     void setTitle(string, Uint8, string, Uint8, Uint8, Uint8);
+    void setCloseBtn(Uint8, string, Uint8, Uint8, Uint8);
     void addWindowFrame(Uint16, Uint16, Uint16, Uint16, Uint8, Uint8, Uint8);
     void setWindowBorder(Uint8, Uint8, Uint8, Uint8);
     void addTitleFrame(int, int, int);
     void unsetTitleText();
+    void unsetCloseBtnText();
+    SDL_Rect getScreenCloseBtnRect();
     virtual void update();
     virtual ~GuiWindow();
 };
 GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiScreen(_screen) {
   hasTitleText = false;
+  hasCloseBtnText = false;
   windowFrameIdx = -1;
   titleFrameIdx = -1;
 }
@@ -217,6 +224,16 @@ void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
   titleText = TTF_RenderText_Blended(font, _title.c_str(), tmpFontColor);
   TTF_CloseFont(font);
   hasTitleText = true;
+}
+void GuiWindow::setCloseBtn(Uint8 _fontSize, string _fontFile,
+                            Uint8 _r, Uint8 _g, Uint8 _b) {
+  cout << "test 1" << endl;
+  unsetCloseBtnText();
+  TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
+  SDL_Color tmpFontColor = { _r, _g, _b };
+  closeBtnText = TTF_RenderText_Blended(font, "X", tmpFontColor);
+  TTF_CloseFont(font);
+  hasCloseBtnText = true;
 }
 void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
                                Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -239,15 +256,36 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
     frames[titleFrameIdx]->setBgColor(_r, _g, _b);
     innerRect->y += titleText->h + windowBorderWidth;
     innerRect->h -= titleText->h + windowBorderWidth;
+    if (hasCloseBtnText == true) {
+      SDL_Surface *frameSurface = frames[titleFrameIdx]->getSurface();
+      closeBtnRect.x = frameSurface->w - closeBtnText->w;
+      closeBtnRect.y = 0;
+      closeBtnRect.w = closeBtnText->w;
+      closeBtnRect.h = closeBtnText->h;
+    }
   }
 }
 void GuiWindow::update() {
   GuiScreen::update();
-  if (hasTitleText == true) {
+  if (titleFrameIdx > -1) {
     SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
-    SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
+    if (hasTitleText == true) {
+      SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
+    }
+    if (hasCloseBtnText == true) {
+      SDL_BlitSurface(closeBtnText, NULL, titleFrameSurface, &closeBtnRect);
+    }
     SDL_BlitSurface(titleFrameSurface, NULL, screen, frames[titleFrameIdx]->getRect());
   }
+}
+SDL_Rect GuiWindow::getScreenCloseBtnRect() {
+  SDL_Rect *frameRect = frames[titleFrameIdx]->getRect();
+  SDL_Rect screenCloseBtnRect;
+  screenCloseBtnRect.x = closeBtnRect.x + frameRect->x;
+  screenCloseBtnRect.y = closeBtnRect.y + frameRect->y;
+  screenCloseBtnRect.w = closeBtnRect.w;
+  screenCloseBtnRect.h = closeBtnRect.h;
+  return screenCloseBtnRect;
 }
 void GuiWindow::unsetTitleText() {
   if (hasTitleText == true) {
@@ -255,8 +293,15 @@ void GuiWindow::unsetTitleText() {
     hasTitleText = false;
   }
 }
+void GuiWindow::unsetCloseBtnText() {
+  if (hasCloseBtnText == true) {
+    SDL_FreeSurface(closeBtnText);
+    hasCloseBtnText = false;
+  }
+}
 GuiWindow::~GuiWindow() {
   unsetTitleText();
+  unsetCloseBtnText();
 }
 
 // ----> GUI TEXT WINDOW
@@ -288,13 +333,14 @@ vector<string> GuiTextWindow::wrapText(
                ) {
   vector<string> lines;
   string tmpStr;
-  int linePos, pos, rfindLength, textWidth, textHeight;
+  unsigned linePos, pos, rfindLength;
+  int textWidth, textHeight;
   pos = linePos = 0;
   while (pos <= _text.length()) {
     tmpStr = _text.substr(linePos, pos-linePos);
     if (tmpStr.length() > 0) {
       TTF_SizeText(_font, tmpStr.c_str(), &textWidth, &textHeight);
-      if (textWidth > _maxWidth) {
+      if ((unsigned)textWidth > _maxWidth) {
         rfindLength = _text.rfind(' ', pos);
         tmpStr = _text.substr(linePos, rfindLength - linePos);
         lines.push_back(tmpStr);
@@ -426,6 +472,13 @@ GuiListWindow::~GuiListWindow() {
 }
 
 // ----> MAIN
+bool isClickOnCloseBtn(Uint16 x, Uint16 y, SDL_Rect *closeBtnRect) {
+  if (x > closeBtnRect->x && x < closeBtnRect->x + closeBtnRect->w &&
+      y > closeBtnRect->y && y < closeBtnRect->y + closeBtnRect->h) {
+    return true;
+  }
+  return false;
+}
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
   TTF_Init();
@@ -434,7 +487,8 @@ int main (int argc, char *argv[]) {
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
   GuiTextWindow *guiTW = new GuiTextWindow(screen);
-  guiTW->setTitle("TEST TEXT WINDOW", 20, "libertysans.ttf", 0, 0, 0);
+  guiTW->setTitle("TEST TEXT WINDOW", 18, "libertysans.ttf", 0, 0, 0);
+  guiTW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
   guiTW->addWindowFrame(10, 10, 300, 300, 0, 0, 0);
   guiTW->setWindowBorder(5, 255, 255, 255);
   guiTW->addTitleFrame(255, 255, 255);
@@ -447,7 +501,8 @@ int main (int argc, char *argv[]) {
   guiTW->update();
 
   GuiListWindow *guiLW = new GuiListWindow(screen);
-  guiLW->setTitle("TEST LIST WINDOW", 20, "libertysans.ttf", 0, 0, 0);
+  guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
+  guiLW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
   guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 0);
   guiLW->setWindowBorder(5, 255, 255, 255);
   guiLW->addTitleFrame(255, 255, 255);
@@ -465,12 +520,23 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
   guiLW->update();
 
+  SDL_Rect guiTWCloseBtnRect = guiTW->getScreenCloseBtnRect();
+  SDL_Rect guiLWCloseBtnRect = guiLW->getScreenCloseBtnRect();
+
   SDL_UpdateRect(screen, 0, 0, 0, 0);
 
   SDL_Event event;
   bool quit = false;
   while (quit == false) {
     if (SDL_PollEvent(&event)) {
+      if (event.type == SDL_MOUSEBUTTONDOWN &&
+          event.button.button == SDL_BUTTON_LEFT) {
+        if (isClickOnCloseBtn(event.button.x, event.button.y, &guiTWCloseBtnRect) == true) {
+          cout << "Text Window Close Button Event" << endl;
+        } else if (isClickOnCloseBtn(event.button.x, event.button.y, &guiLWCloseBtnRect) == true) {
+          cout << "List Window Close Button Event" << endl;
+        }
+      }
       switch (event.type) {
         case SDL_QUIT:
           quit = 1;

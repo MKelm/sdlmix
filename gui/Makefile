@@ -2,6 +2,7 @@
 ARCH := $(shell uname -m)
 CC = g++
 #CFLAGS = -Wall -ggdb -std=c++0x
+#CFLAGS = -std=c++0x -O3
 CFLAGS = -std=c++0x
 LDFLAGS = -lSDL -lSDL_ttf -lSDL_image -lSDL_gfx
 
