@@ -242,22 +242,18 @@ GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
   hasText = false;
 }
 vector<string> GuiTextWindow::wrapText(const string &text, int line_length) {
-
   vector<string> split_text;
   string::size_type start_point = 0, split_point = 0;
-
   while (start_point + line_length < text.size()) {
     split_point = text.rfind(' ', start_point+line_length);
-
     if (split_point < start_point || split_point == string::npos) {
-      split_text.push_back( text.substr(start_point, line_length) );
+      split_text.push_back(text.substr(start_point, line_length));
       start_point += line_length;
     } else {
-      split_text.push_back( text.substr(start_point, split_point-start_point) );
+      split_text.push_back(text.substr(start_point, split_point-start_point));
       start_point = split_point + 1;
     }
   }
-
   split_text.push_back(text.substr(start_point, line_length));
   return split_text;
 }
@@ -266,12 +262,23 @@ void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
   unsetText();
   TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
   SDL_Color tmpFontColor = { _r, _g, _b };
-
+  SDL_Surface *tempText = SDL_CreateRGBSurface(
+    0, innerRect->w, innerRect->h - titleText->h - windowBorderWidth,
+    screen->format->BytesPerPixel * 8, 0, 0, 0, 0
+  );
+  SDL_Rect tempTextRect;
+  tempTextRect.x = 0;
+  tempTextRect.y = 0;
   vector<string> lines = wrapText(_text, 20);
-  text = TTF_RenderText_Solid(font, lines[0].c_str(), tmpFontColor);
-  /*for (Uint8 i = 0; i < lines.size(); i++) {
-    // todo multiline surface
-  };*/
+  for (Uint8 i = 0; i < lines.size(); i++) {
+    if (i > 0)
+      SDL_FreeSurface(text);
+    text = TTF_RenderText_Solid(font, lines[i].c_str(), tmpFontColor);
+    SDL_BlitSurface(text, NULL, tempText, &tempTextRect);
+    tempTextRect.y += text->h;
+  };
+  SDL_FreeSurface(text);
+  text = tempText;
   TTF_CloseFont(font);
   hasText = true;
 }
@@ -306,7 +313,7 @@ int main (int argc, char *argv[]) {
   gui->setWindowBorder(5, 255, 255, 255);
   gui->addTitleFrame(255, 255, 255);
   gui->setText(
-    "Lorem ipsum dolor sit amet, nam et detracto contentiones. Eirmod accusamus has in, fastidii liberavisse sit ad. Postea constituto qui te. In laudem semper dolores usu, sed id meis expetenda salutatus, sea nisl modus iudicabit ea. No eum cibo dicunt.",
+    "Lorem ipsum dolor sit amet, nam et detracto contentiones.",
     24, "mkds.ttf", 255, 255, 255
   );
   gui->bgFill(120, 120, 120);
