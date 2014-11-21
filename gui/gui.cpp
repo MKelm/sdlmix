@@ -5,8 +5,35 @@
 #include <iostream>
 using namespace std;
 
+struct stGuiRgbColor {
+  Uint8 r;
+  Uint8 g;
+  Uint8 b;
+};
+
+// ----> GUI BGCOLOR
+class GuiBgColor {
+  protected:
+    bool hasBgColor;
+    struct stGuiRgbColor bgColor;
+  public:
+    GuiBgColor();
+    void setBgColor(int, int, int);
+};
+GuiBgColor::GuiBgColor() {
+  hasBgColor = false;
+}
+void GuiBgColor::setBgColor(int _r, int _g, int _b) {
+  if (_r > -1 && _g > -1 && _b > -1) {
+    bgColor.r = _r;
+    bgColor.g = _g;
+    bgColor.b = _b;
+    hasBgColor = true;
+  }
+}
+
 // ----> GUI FRAME
-class GuiFrame {
+class GuiFrame: public GuiBgColor {
   protected:
     Uint8 bpp;
     SDL_Surface *frame;
@@ -15,11 +42,7 @@ class GuiFrame {
     bool hasFrame;
     bool hasBorder;
     Uint8 borderWidth;
-    struct stGuiFrameBorderColor {
-      Uint8 r;
-      Uint8 g;
-      Uint8 b;
-    } borderColor;
+    struct stGuiRgbColor borderColor;
   public:
     GuiFrame(Uint8);
     void set(Uint16, Uint16, Uint16, Uint16);
@@ -27,7 +50,7 @@ class GuiFrame {
     SDL_Rect *getRect();
     SDL_Rect *getInnerRect();
     SDL_Surface *getSurface();
-    void bgFill(Uint8, Uint8, Uint8);
+    void bgFill();
     void drawBorder();
     void unset();
     ~GuiFrame();
@@ -69,10 +92,13 @@ SDL_Rect *GuiFrame::getInnerRect() {
 SDL_Surface *GuiFrame::getSurface() {
   return frame;
 }
-void GuiFrame::bgFill(Uint8 _r, Uint8 _g, Uint8 _b) {
-  SDL_FillRect(
-    frame, &frame->clip_rect, SDL_MapRGB(frame->format, _r, _g, _b)
-  );
+void GuiFrame::bgFill() {
+  if (hasBgColor == true) {
+    SDL_FillRect(
+      frame, &frame->clip_rect,
+      SDL_MapRGB(frame->format, bgColor.r, bgColor.g, bgColor.b)
+    );
+  }
 }
 void GuiFrame::drawBorder() {
   if (hasBorder == true) {
@@ -111,19 +137,20 @@ GuiFrame::~GuiFrame() {
 }
 
 // ----> GUI SCREEN
-class GuiScreen {
+class GuiScreen: public GuiBgColor {
   protected:
     SDL_Surface *screen;
     vector<GuiFrame *> frames;
   public:
     GuiScreen(SDL_Surface *);
     GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
-    void bgFill(Uint8, Uint8, Uint8);
+    void bgFill();
     virtual void update();
     virtual ~GuiScreen();
 };
 GuiScreen::GuiScreen(SDL_Surface *_screen) {
   screen = _screen;
+  hasBgColor = false;
 }
 GuiFrame *GuiScreen::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   GuiFrame *tempFrame = new GuiFrame(screen->format->BytesPerPixel * 8);
@@ -131,15 +158,20 @@ GuiFrame *GuiScreen::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   frames.push_back(tempFrame);
   return tempFrame;
 }
-void GuiScreen::bgFill(Uint8 _r, Uint8 _g, Uint8 _b) {
-  SDL_FillRect(
-    screen, &screen->clip_rect, SDL_MapRGB(screen->format, _r, _g, _b)
-  );
+void GuiScreen::bgFill() {
+  if (hasBgColor == true) {
+    SDL_FillRect(
+      screen, &screen->clip_rect,
+      SDL_MapRGB(screen->format,  bgColor.r,  bgColor.g, bgColor.b)
+    );
+  }
 }
 void GuiScreen::update() {
+  bgFill();
   if (frames.size() > 0) {
     vector<GuiFrame *>::iterator it;
     for (it = frames.begin(); it != frames.end(); it++) {
+      (*it)->bgFill();
       (*it)->drawBorder();
       SDL_BlitSurface((*it)->getSurface(), NULL, screen, (*it)->getRect());
     }
@@ -168,7 +200,7 @@ class GuiWindow: public GuiScreen {
     void setTitle(string, Uint8, string, Uint8, Uint8, Uint8);
     void addWindowFrame(Uint16, Uint16, Uint16, Uint16, Uint8, Uint8, Uint8);
     void setWindowBorder(Uint8, Uint8, Uint8, Uint8);
-    void addTitleFrame(Uint8, Uint8, Uint8);
+    void addTitleFrame(int, int, int);
     void unsetTitleText();
     virtual void update();
     virtual ~GuiWindow();
@@ -191,7 +223,7 @@ void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
                                Uint8 _r, Uint8 _g, Uint8 _b) {
   addFrame(_x, _y, _w, _h);
   windowFrameIdx = frames.size() - 1;
-  frames[windowFrameIdx]->bgFill(_r, _g, _b);
+  frames[windowFrameIdx]->setBgColor(_r, _g, _b);
   innerRect = frames[windowFrameIdx]->getInnerRect();
 }
 void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -201,19 +233,22 @@ void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
     innerRect = frames[windowFrameIdx]->getInnerRect();
   }
 }
-void GuiWindow::addTitleFrame(Uint8 _r, Uint8 _g, Uint8 _b) {
+void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
   if (hasTitleText == true && windowFrameIdx > -1) {
     addFrame(innerRect->x, innerRect->y, innerRect->w, titleText->h + windowBorderWidth);
     titleFrameIdx = frames.size() - 1;
-    frames[titleFrameIdx]->bgFill(_r, _g, _b);
+    frames[titleFrameIdx]->setBgColor(_r, _g, _b);
     innerRect->y += titleText->h + windowBorderWidth;
   }
 }
 void GuiWindow::update() {
-  if (hasTitleText == true) {
-    SDL_BlitSurface(titleText, NULL, frames[titleFrameIdx]->getSurface(), NULL);
-  }
   GuiScreen::update();
+  if (hasTitleText == true) {
+    SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
+    SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
+    SDL_BlitSurface(titleFrameSurface, NULL, screen, frames[titleFrameIdx]->getRect());
+    SDL_Flip(screen);
+  }
 }
 void GuiWindow::unsetTitleText() {
   if (hasTitleText == true) {
@@ -334,7 +369,7 @@ int main (int argc, char *argv[]) {
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
   );
-  gui->bgFill(120, 120, 120);
+  gui->setBgColor(120, 120, 120);
   gui->update();
 
   SDL_Event event;
@@ -347,6 +382,9 @@ int main (int argc, char *argv[]) {
           break;
         case SDL_KEYDOWN:
           switch (event.key.keysym.sym) {
+            case SDLK_r:
+              gui->update();
+              break;
             case SDLK_ESCAPE:
             case SDLK_q:
               quit = true;
