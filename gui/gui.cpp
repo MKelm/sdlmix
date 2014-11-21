@@ -317,13 +317,13 @@ int main (int argc, char *argv[]) {
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
   GuiTextWindow *gui = new GuiTextWindow(screen);
-  gui->setTitle("TEST WINDOW", 24, "mkds.ttf", 0, 0, 0);
+  gui->setTitle("TEST WINDOW", 20, "libertysans.ttf", 0, 0, 0);
   gui->addWindowFrame(screen->w / 2 - 150, screen->h / 2 - 150, 300, 300, 0, 0, 0);
   gui->setWindowBorder(5, 255, 255, 255);
   gui->addTitleFrame(255, 255, 255);
   gui->setText(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
-    24, "mkds.ttf", 255, 255, 255
+    16, "libertysans.ttf", 255, 255, 255
   );
   gui->bgFill(120, 120, 120);
   gui->update();
