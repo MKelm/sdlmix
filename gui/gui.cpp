@@ -12,18 +12,28 @@ class GuiFrame {
     SDL_Surface *frame;
     SDL_Rect frameRect;
     bool hasFrame;
+    bool hasBorder;
+    Uint8 borderWidth;
+    struct stGuiFrameBorderColor {
+      Uint8 r;
+      Uint8 g;
+      Uint8 b;
+    } borderColor;
   public:
     GuiFrame(Uint8);
     virtual void set(Uint16, Uint16, Uint16, Uint16);
+    virtual void setBorder(Uint8, Uint8, Uint8, Uint8);
     virtual SDL_Rect *getRect();
     virtual SDL_Surface *getSurface();
     virtual void bgFill(Uint8, Uint8, Uint8);
+    virtual void drawBorder();
     virtual void unset();
     virtual ~GuiFrame();
 };
 GuiFrame::GuiFrame(Uint8 _bpp) {
   bpp = _bpp;
   hasFrame = false;
+  hasBorder = false;
 }
 void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   unset();
@@ -36,6 +46,13 @@ void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   );
   hasFrame = true;
 }
+void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
+  borderWidth = _width;
+  borderColor.r = _r;
+  borderColor.g = _g;
+  borderColor.b = _b;
+  hasBorder = true;
+}
 SDL_Rect *GuiFrame::getRect() {
   return &frameRect;
 }
@@ -46,6 +63,32 @@ void GuiFrame::bgFill(Uint8 _r, Uint8 _g, Uint8 _b) {
   SDL_FillRect(
     frame, &frame->clip_rect, SDL_MapRGB(frame->format, _r, _g, _b)
   );
+}
+void GuiFrame::drawBorder() {
+  if (hasBorder == true) {
+    boxRGBA(
+      frame, 0, 0, frame->clip_rect.w - 1, borderWidth,
+      borderColor.r, borderColor.g, borderColor.b, 255
+    ); // top
+    boxRGBA(
+      frame,
+      0, 0,
+      borderWidth, frame->clip_rect.h - 1,
+      borderColor.r, borderColor.g, borderColor.b, 255
+    ); // left
+    boxRGBA(
+      frame,
+      0, frame->clip_rect.h - 1 - borderWidth,
+      frame->clip_rect.w - 1, frame->clip_rect.h - 1,
+      borderColor.r, borderColor.g, borderColor.b, 255
+    ); // bottom
+    boxRGBA(
+      frame,
+      frame->clip_rect.w - 1 - borderWidth, 0,
+      frame->clip_rect.w - 1, frame->clip_rect.h - 1,
+      borderColor.r, borderColor.g, borderColor.b, 255
+    ); // bottom
+  }
 }
 void GuiFrame::unset() {
   if (hasFrame == true) {
@@ -87,6 +130,7 @@ void GuiScreen::update() {
   if (frames.size() > 0) {
     vector<GuiFrame *>::iterator it;
     for (it = frames.begin(); it != frames.end(); it++) {
+      (*it)->drawBorder();
       SDL_BlitSurface((*it)->getSurface(), NULL, screen, (*it)->getRect());
     }
   }
@@ -111,6 +155,7 @@ class GuiWindow: public GuiScreen {
     GuiWindow(SDL_Surface *);
     void setTitle(string, Uint8, string, Uint8, Uint8, Uint8);
     void addWindowFrame(Uint16, Uint16, Uint16, Uint16, Uint8, Uint8, Uint8);
+    void setWindowBorder(Uint8, Uint8, Uint8, Uint8);
     void addTitleFrame(Uint8, Uint8, Uint8);
     void update();
     void unsetTitleText();
@@ -136,6 +181,9 @@ void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
   windowFrameIdx = frames.size() - 1;
   frames[windowFrameIdx]->bgFill(_r, _g, _b);
 }
+void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
+  frames[windowFrameIdx]->setBorder(_width, _r, _g, _b);
+}
 void GuiWindow::addTitleFrame(Uint8 _r, Uint8 _g, Uint8 _b) {
   if (hasTitleText == true) {
     SDL_Rect *windowRect = frames[windowFrameIdx]->getRect();
@@ -160,6 +208,7 @@ GuiWindow::~GuiWindow() {
   unsetTitleText();
 }
 
+// ----> MAIN
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
   TTF_Init();
@@ -168,10 +217,11 @@ int main (int argc, char *argv[]) {
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
   GuiWindow *gui = new GuiWindow(screen);
-  gui->bgFill(255, 0, 0);
   gui->setTitle("TEST WINDOW", 24, "mkds.ttf", 0, 0, 0);
-  gui->addWindowFrame(screen->w / 2 - 150, screen->h / 2 - 150, 300, 300, 0, 255, 0);
-  gui->addTitleFrame(255, 0, 255);
+  gui->addWindowFrame(screen->w / 2 - 150, screen->h / 2 - 150, 300, 300, 0, 0, 0);
+  gui->setWindowBorder(5, 255, 255, 255);
+  gui->addTitleFrame(255, 255, 255);
+  gui->bgFill(120, 120, 120);
   gui->update();
 
   SDL_Event event;
