@@ -175,7 +175,6 @@ void GuiScreen::update() {
       SDL_BlitSurface((*it)->getSurface(), NULL, screen, (*it)->getRect());
     }
   }
-  SDL_UpdateRect(screen, 0, 0, 0, 0);
 }
 GuiScreen::~GuiScreen() {
   vector<GuiFrame *>::iterator it;
@@ -247,7 +246,6 @@ void GuiWindow::update() {
     SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
     SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
     SDL_BlitSurface(titleFrameSurface, NULL, screen, frames[titleFrameIdx]->getRect());
-    SDL_UpdateRect(screen, 0, 0, 0, 0);
   }
 }
 void GuiWindow::unsetTitleText() {
@@ -344,7 +342,6 @@ void GuiTextWindow::update() {
   GuiWindow::update();
   if (hasText == true) {
     SDL_BlitSurface(text, NULL, screen, innerRect);
-    SDL_UpdateRect(screen, 0, 0, 0, 0);
   }
 }
 GuiTextWindow::~GuiTextWindow() {
@@ -456,6 +453,8 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("", "Title 7", "Lorem ipsum dolor sit amet.");
   guiLW->update();
 
+  SDL_UpdateRect(screen, 0, 0, 0, 0);
+
   SDL_Event event;
   bool quit = false;
   while (quit == false) {
@@ -469,6 +468,7 @@ int main (int argc, char *argv[]) {
             case SDLK_r:
               guiTW->update();
               guiLW->update();
+              SDL_UpdateRect(screen, 0, 0, 0, 0);
               break;
             case SDLK_ESCAPE:
             case SDLK_q:
