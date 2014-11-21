@@ -11,6 +11,7 @@ class GuiFrame {
     Uint8 bpp;
     SDL_Surface *frame;
     SDL_Rect frameRect;
+    SDL_Rect innerFrameRect;
     bool hasFrame;
     bool hasBorder;
     Uint8 borderWidth;
@@ -24,6 +25,7 @@ class GuiFrame {
     virtual void set(Uint16, Uint16, Uint16, Uint16);
     virtual void setBorder(Uint8, Uint8, Uint8, Uint8);
     virtual SDL_Rect *getRect();
+    virtual SDL_Rect *getInnerRect();
     virtual SDL_Surface *getSurface();
     virtual void bgFill(Uint8, Uint8, Uint8);
     virtual void drawBorder();
@@ -41,6 +43,7 @@ void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   frameRect.y = _y;
   frameRect.w = _w;
   frameRect.h = _h;
+  innerFrameRect = frameRect;
   frame = SDL_CreateRGBSurface(
     0, frameRect.w, frameRect.h, bpp, 0, 0, 0, 0
   );
@@ -52,9 +55,16 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   borderColor.g = _g;
   borderColor.b = _b;
   hasBorder = true;
+  innerFrameRect.x += _width;
+  innerFrameRect.y += _width;
+  innerFrameRect.w = frameRect.w - 1 - 2 * _width;
+  innerFrameRect.h = frameRect.h - 1 - 2 * _width;
 }
 SDL_Rect *GuiFrame::getRect() {
   return &frameRect;
+}
+SDL_Rect *GuiFrame::getInnerRect() {
+  return &innerFrameRect;
 }
 SDL_Surface *GuiFrame::getSurface() {
   return frame;
@@ -148,6 +158,7 @@ GuiScreen::~GuiScreen() {
 class GuiWindow: public GuiScreen {
   protected:
     int windowFrameIdx;
+    Uint8 windowBorderWidth;
     int titleFrameIdx;
     SDL_Surface *titleText;
     bool hasTitleText;
@@ -182,12 +193,15 @@ void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
   frames[windowFrameIdx]->bgFill(_r, _g, _b);
 }
 void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
-  frames[windowFrameIdx]->setBorder(_width, _r, _g, _b);
+  if (windowFrameIdx > -1) {
+    windowBorderWidth = _width;
+    frames[windowFrameIdx]->setBorder(_width, _r, _g, _b);
+  }
 }
 void GuiWindow::addTitleFrame(Uint8 _r, Uint8 _g, Uint8 _b) {
-  if (hasTitleText == true) {
-    SDL_Rect *windowRect = frames[windowFrameIdx]->getRect();
-    addFrame(windowRect->x, windowRect->y, windowRect->w, titleText->h);
+  if (hasTitleText == true && windowFrameIdx > -1) {
+    SDL_Rect *windowRect = frames[windowFrameIdx]->getInnerRect();
+    addFrame(windowRect->x, windowRect->y, windowRect->w, titleText->h + windowBorderWidth);
     titleFrameIdx = frames.size() - 1;
     frames[titleFrameIdx]->bgFill(_r, _g, _b);
   }
