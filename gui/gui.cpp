@@ -516,13 +516,6 @@ GuiListWindow::~GuiListWindow() {
 }
 
 // ----> MAIN
-bool isClickOnCloseBtn(Uint16 x, Uint16 y, SDL_Rect *closeBtnRect) {
-  if (x > closeBtnRect->x && x < closeBtnRect->x + closeBtnRect->w &&
-      y > closeBtnRect->y && y < closeBtnRect->y + closeBtnRect->h) {
-    return true;
-  }
-  return false;
-}
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
   TTF_Init();
