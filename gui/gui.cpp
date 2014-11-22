@@ -574,8 +574,15 @@ void GuiListWindow::update() {
       tmpRect.y += entries[i].titleText->h;
       SDL_BlitSurface(entries[i].text, NULL, listFrameSurface, &tmpRect);
       tmpRect.y += entries[i].text->h;
-      SDL_BlitSurface(listFrameSurface, NULL, screen, frames[listFrameIdx]->getRect());
+      SDL_BlitSurface(
+        listFrameSurface, NULL, frames[mainFrameIdx]->getSurface(),
+        frames[listFrameIdx]->getRect()
+      );
     }
+    SDL_BlitSurface(
+      frames[mainFrameIdx]->getSurface(), NULL, screen,
+      frames[mainFrameIdx]->getRect()
+    );
   }
 }
 GuiListWindow::~GuiListWindow() {
@@ -613,7 +620,7 @@ int main (int argc, char *argv[]) {
   guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 255);
   guiLW->setWindowBorder(5, 255, 255, 255);
   guiLW->addTitleFrame(255, 255, 255);
-  /*guiLW->addListFrame(0, 0, 0);
+  guiLW->addListFrame(0, 0, 0);
   guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
   guiLW->addEntry("listitem.png", "Title 1", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 2", "Lorem ipsum dolor sit amet.");
@@ -624,7 +631,7 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 7", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 8", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");*/
+  guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
 
   screenBgFill(screen);
   guiTW->update();
