@@ -81,6 +81,7 @@ class GuiFrame: public GuiBgColor {
     GuiFrame(Uint8);
     void set(Uint16, Uint16, Uint16, Uint16);
     void setBorder(Uint8, Uint8, Uint8, Uint8);
+    void setPosition(Uint16, Uint16);
     SDL_Rect *getRect();
     SDL_Rect *getInnerRect();
     SDL_Surface *getSurface();
@@ -116,6 +117,12 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   innerFrameRect.y += _width;
   innerFrameRect.w = frameRect.w - 1 - 2 * _width;
   innerFrameRect.h = frameRect.h - 1 - 2 * _width;
+}
+void GuiFrame::setPosition(Uint16 _x, Uint16 _y) {
+  frameRect.x = _x;
+  frameRect.y = _y;
+  innerFrameRect.x = _x;
+  innerFrameRect.y = _y;
 }
 SDL_Rect *GuiFrame::getRect() {
   return &frameRect;
@@ -239,6 +246,7 @@ class GuiWindow: public GuiScreen {
     SDL_Rect *innerRect;
   public:
     GuiWindow(SDL_Surface *);
+    void setPosition(Uint16, Uint16);
     void setTitle(string, Uint8, string, Uint8, Uint8, Uint8);
     void setCloseBtn(Uint8, string, Uint8, Uint8, Uint8);
     void addWindowFrame(Uint16, Uint16, Uint16, Uint16, Uint8, Uint8, Uint8);
@@ -254,6 +262,13 @@ GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiScreen(_screen) {
   hasCloseBtnText = false;
   windowFrameIdx = -1;
   titleFrameIdx = -1;
+}
+void GuiWindow::setPosition(Uint16 _x, Uint16 _y) {
+  redrawOnUpdate = false;
+  vector<GuiFrame *>::iterator it;
+  for (it = frames.begin(); it != frames.end(); it++) {
+    (*it)->setPosition(_x, _y);
+  }
 }
 void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
                          Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -585,17 +600,6 @@ int main (int argc, char *argv[]) {
                      "windowCloseButton", event.button.x, event.button.y) == true
                   ) {
           cout << "List Window Close Button Event" << endl;
-        }
-      }
-      if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
-        if (guiTW->eventAreas.isEventInArea(
-              "windowMoveBar", event.button.x, event.button.y) == true
-           ) {
-          cout << "Text Window Move" << endl;
-        } else if (guiLW->eventAreas.isEventInArea(
-                    "windowMoveBar", event.button.x, event.button.y) == true
-                  ) {
-          cout << "List Window Move" << endl;
         }
       }
       if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
