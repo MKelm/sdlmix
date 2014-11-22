@@ -81,7 +81,7 @@ class GuiFrame: public GuiBgColor {
     GuiFrame(Uint8);
     void set(Uint16, Uint16, Uint16, Uint16);
     void setBorder(Uint8, Uint8, Uint8, Uint8);
-    void setPosition(Uint16, Uint16);
+    void move(Uint16, Uint16);
     SDL_Rect *getRect();
     SDL_Rect *getInnerRect();
     SDL_Surface *getSurface();
@@ -118,11 +118,11 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   innerFrameRect.w = frameRect.w - 1 - 2 * _width;
   innerFrameRect.h = frameRect.h - 1 - 2 * _width;
 }
-void GuiFrame::setPosition(Uint16 _x, Uint16 _y) {
-  frameRect.x = _x;
-  frameRect.y = _y;
-  innerFrameRect.x = _x;
-  innerFrameRect.y = _y;
+void GuiFrame::move(Uint16 _x, Uint16 _y) {
+  frameRect.x -= _x;
+  frameRect.y -= _y;
+  innerFrameRect.x -= _x;
+  innerFrameRect.y -= _y;
 }
 SDL_Rect *GuiFrame::getRect() {
   return &frameRect;
@@ -242,11 +242,12 @@ class GuiWindow: public GuiScreen {
     SDL_Surface *closeBtnText;
     bool hasCloseBtnText;
     SDL_Rect closeBtnRect;
-    SDL_Rect moveRect;
     SDL_Rect *innerRect;
+    SDL_Rect moveRect;
   public:
     GuiWindow(SDL_Surface *);
-    void setPosition(Uint16, Uint16);
+    void resetMove();
+    void setMove(Uint16, Uint16);
     void setTitle(string, Uint8, string, Uint8, Uint8, Uint8);
     void setCloseBtn(Uint8, string, Uint8, Uint8, Uint8);
     void addWindowFrame(Uint16, Uint16, Uint16, Uint16, Uint8, Uint8, Uint8);
@@ -262,13 +263,23 @@ GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiScreen(_screen) {
   hasCloseBtnText = false;
   windowFrameIdx = -1;
   titleFrameIdx = -1;
+  resetMove();
 }
-void GuiWindow::setPosition(Uint16 _x, Uint16 _y) {
+void GuiWindow::resetMove() {
+  redrawOnUpdate = true;
+  moveRect.x = -1;
+  moveRect.y = -1;
+}
+void GuiWindow::setMove(Uint16 _x, Uint16 _y) {
   redrawOnUpdate = false;
-  vector<GuiFrame *>::iterator it;
-  for (it = frames.begin(); it != frames.end(); it++) {
-    (*it)->setPosition(_x, _y);
+  if (moveRect.x > -1 && moveRect.y > -1) {
+    vector<GuiFrame *>::iterator it;
+    for (it = frames.begin(); it != frames.end(); it++) {
+      (*it)->move(moveRect.x - _x, moveRect.y - _y);
+    }
   }
+  moveRect.x = _x;
+  moveRect.y = _y;
 }
 void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
                          Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -541,6 +552,12 @@ GuiListWindow::~GuiListWindow() {
 }
 
 // ----> MAIN
+void screenBgFill(SDL_Surface *screen) {
+  SDL_FillRect(
+    screen, &screen->clip_rect,
+    SDL_MapRGB(screen->format, 120, 120, 120)
+  );
+}
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
   TTF_Init();
@@ -559,8 +576,6 @@ int main (int argc, char *argv[]) {
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
   );
-  guiTW->setBgColor(120, 120, 120);
-  guiTW->update();
 
   GuiListWindow *guiLW = new GuiListWindow(screen);
   guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
@@ -580,14 +595,17 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 8", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
-  guiLW->update();
 
+  screenBgFill(screen);
+  guiTW->update();
+  guiLW->update();
   SDL_UpdateRect(screen, 0, 0, 0, 0);
 
   SDL_Event event;
-  Uint8 maxFPS = 15;
+  Uint8 maxFPS = 30;
   Uint32 frameStart = 0;
   bool quit = false;
+  bool lMouseBtnDown = false;
 
   while (quit == false) {
     frameStart = SDL_GetTicks();
@@ -595,6 +613,7 @@ int main (int argc, char *argv[]) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEBUTTONDOWN &&
           event.button.button == SDL_BUTTON_LEFT) {
+        lMouseBtnDown = true;
         if (guiTW->eventAreas.isEventInArea(
               "windowCloseButton", event.button.x, event.button.y) == true
            ) {
@@ -604,6 +623,27 @@ int main (int argc, char *argv[]) {
                   ) {
           cout << "List Window Close Button Event" << endl;
         }
+      } else if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
+        if (guiTW->eventAreas.isEventInArea(
+              "windowMoveBar", event.button.x, event.button.y) == true
+           ) {
+          screenBgFill(screen);
+          guiLW->update();
+          guiTW->setMove(event.button.x, event.button.y);
+          guiTW->update();
+        } else if (guiLW->eventAreas.isEventInArea(
+                    "windowMoveBar", event.button.x, event.button.y) == true
+                  ) {
+          screenBgFill(screen);
+          guiTW->update();
+          guiLW->setMove(event.button.x, event.button.y);
+          guiLW->update();
+        }
+      } else if (event.type == SDL_MOUSEBUTTONUP &&
+                 event.button.button == SDL_BUTTON_LEFT) {
+        lMouseBtnDown = false;
+        guiLW->resetMove();
+        guiTW->resetMove();
       }
       switch (event.type) {
         case SDL_QUIT:
@@ -614,7 +654,6 @@ int main (int argc, char *argv[]) {
             case SDLK_r:
               guiTW->update();
               guiLW->update();
-              SDL_UpdateRect(screen, 0, 0, 0, 0);
               break;
             case SDLK_ESCAPE:
             case SDLK_q:
@@ -626,6 +665,8 @@ int main (int argc, char *argv[]) {
           break;
       }
     }
+
+    SDL_UpdateRect(screen, 0, 0, 0, 0);
 
     if ((SDL_GetTicks() - frameStart) < (1000 / maxFPS)) {
       SDL_Delay((1000 / maxFPS) - (SDL_GetTicks() - frameStart));
