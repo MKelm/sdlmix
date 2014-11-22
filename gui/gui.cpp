@@ -628,6 +628,7 @@ int main (int argc, char *argv[]) {
               "windowMoveBar", event.button.x, event.button.y) == true
            ) {
           screenBgFill(screen);
+          guiLW->redrawOnUpdate = false;
           guiLW->update();
           guiTW->setMove(event.button.x, event.button.y);
           guiTW->update();
@@ -635,6 +636,7 @@ int main (int argc, char *argv[]) {
                     "windowMoveBar", event.button.x, event.button.y) == true
                   ) {
           screenBgFill(screen);
+          guiTW->redrawOnUpdate = false;
           guiTW->update();
           guiLW->setMove(event.button.x, event.button.y);
           guiLW->update();
