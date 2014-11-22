@@ -649,13 +649,13 @@ int main (int argc, char *argv[]) {
   Uint32 frameStart = 0;
   bool quit = false;
   bool lMouseBtnDown = false;
+  Uint8 activeMoveWindow = -1;
 
   while (quit == false) {
     frameStart = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_MOUSEBUTTONDOWN &&
-          event.button.button == SDL_BUTTON_LEFT) {
+      if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = true;
         bool windowCloseEvent = false;
 
@@ -666,6 +666,10 @@ int main (int argc, char *argv[]) {
             delete windows[windowIdx];
             windows.erase(windows.begin() + windowIdx);
             windowCloseEvent = true;
+          } else if (windows[windowIdx]->eventAreas.isEventInArea(
+              "windowMoveBar", event.button.x, event.button.y) == true
+             ) {
+            activeMoveWindow = windowIdx;
           }
         }
         if (windowCloseEvent == true) {
@@ -673,53 +677,37 @@ int main (int argc, char *argv[]) {
           for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
             windows[windowIdx]->fullUpdate = false;
             windows[windowIdx]->update();
+            windows[windowIdx]->fullUpdate = true;
           }
           windowCloseEvent = false;
         }
-      }
-        /*
-        if (guiTW->eventAreas.isEventInArea(
-              "windowCloseButton", event.button.x, event.button.y) == true
-           ) {
-          cout << "Text Window Close Button Event" << endl;
-        } else if (guiLW->eventAreas.isEventInArea(
-                     "windowCloseButton", event.button.x, event.button.y) == true
-                  ) {
-          cout << "List Window Close Button Event" << endl;
-        } else if (guiTW->eventAreas.isEventInArea(
-              "windowMoveBar", event.button.x, event.button.y) == true
-           ) {
-          //activeWindow = TEXT_WINDOW;
-        } else if (guiLW->eventAreas.isEventInArea(
-                    "windowMoveBar", event.button.x, event.button.y) == true
-                  ) {
-          //activeWindow = LIST_WINDOW;
-        }
       } else if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
-        if (guiTW->eventAreas.isEventInArea(
-              "windowMoveBar", event.button.x, event.button.y) == true
-           ) {
-          screenBgFill(screen);
-          guiLW->fullUpdate = false;
-          guiLW->update();
-          guiTW->setMove(event.button.x, event.button.y);
-          guiTW->update();
-        } else if (guiLW->eventAreas.isEventInArea(
-                    "windowMoveBar", event.button.x, event.button.y) == true
-                  ) {
-          screenBgFill(screen);
-          guiTW->fullUpdate = false;
-          guiTW->update();
-          guiLW->setMove(event.button.x, event.button.y);
-          guiLW->update();
+        bool windowMoveEvent = false;
+
+        for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+          if (windows[windowIdx]->eventAreas.isEventInArea(
+              "windowMoveBar", event.button.x, event.button.y) == true &&
+              activeMoveWindow == windowIdx
+             ) {
+            windowMoveEvent = true;
+            windows[windowIdx]->setMove(event.button.x, event.button.y);
+          }
         }
-      } else if (event.type == SDL_MOUSEBUTTONUP &&
-                 event.button.button == SDL_BUTTON_LEFT) {
+        if (windowMoveEvent == true) {
+          screenBgFill(screen);
+          for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+            windows[windowIdx]->fullUpdate = false;
+            windows[windowIdx]->update();
+          }
+          windowMoveEvent = false;
+        }
+      } else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = false;
-        //activeWindow = NO_WINDOW;
-        guiLW->resetMove();
-        guiTW->resetMove();
-      }*/
+        for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+          windows[windowIdx]->resetMove();
+        }
+        activeMoveWindow = -1;
+      }
       switch (event.type) {
         case SDL_QUIT:
           quit = 1;
