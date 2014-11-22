@@ -9,6 +9,7 @@ struct stGuiListEntry {
   SDL_Surface *titleText;
   SDL_Surface *text;
 };
+
 class GuiListWindow: public GuiWindow {
   protected:
     Uint8 imageSize;

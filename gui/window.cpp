@@ -7,11 +7,13 @@ GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiElement(_screen) {
   mainFrameBorderWidth = 0;
   resetMove();
 }
+
 void GuiWindow::resetMove() {
   fullUpdate = true;
   moveRect.x = -1;
   moveRect.y = -1;
 }
+
 void GuiWindow::setMove(Uint16 _x, Uint16 _y) {
   fullUpdate = false;
   if (moveRect.x > -1 && moveRect.y > -1) {
@@ -26,6 +28,7 @@ void GuiWindow::setMove(Uint16 _x, Uint16 _y) {
   moveRect.x = _x;
   moveRect.y = _y;
 }
+
 void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
                          Uint8 _r, Uint8 _g, Uint8 _b) {
   unsetTitleText();
@@ -35,6 +38,7 @@ void GuiWindow::setTitle(string _title, Uint8 _fontSize, string _fontFile,
   TTF_CloseFont(font);
   hasTitleText = true;
 }
+
 void GuiWindow::setCloseBtn(Uint8 _fontSize, string _fontFile,
                             Uint8 _r, Uint8 _g, Uint8 _b) {
   unsetCloseBtnText();
@@ -44,17 +48,20 @@ void GuiWindow::setCloseBtn(Uint8 _fontSize, string _fontFile,
   TTF_CloseFont(font);
   hasCloseBtnText = true;
 }
+
 void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
                                Uint8 _r, Uint8 _g, Uint8 _b) {
   addMainFrame(_x, _y, _w, _h);
   setMainFrameBgColor(_r, _g, _b);
 }
+
 void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   if (mainFrameIdx > -1) {
     mainFrameBorderWidth = _width;
     frames[mainFrameIdx]->setBorder(mainFrameBorderWidth, _r, _g, _b);
   }
 }
+
 void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
   if (mainFrameIdx > -1 && hasTitleText == true) {
     SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
@@ -86,6 +93,7 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
     }
   }
 }
+
 void GuiWindow::update() {
   GuiElement::update();
   if (titleFrameIdx > -1) {
@@ -119,18 +127,21 @@ void GuiWindow::update() {
     }
   }
 }
+
 void GuiWindow::unsetTitleText() {
   if (hasTitleText == true) {
     SDL_FreeSurface(titleText);
     hasTitleText = false;
   }
 }
+
 void GuiWindow::unsetCloseBtnText() {
   if (hasCloseBtnText == true) {
     SDL_FreeSurface(closeBtnText);
     hasCloseBtnText = false;
   }
 }
+
 GuiWindow::~GuiWindow() {
   unsetTitleText();
   unsetCloseBtnText();

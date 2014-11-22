@@ -10,10 +10,12 @@ void GuiEventAreas::add(
   area.h = _h;
   areas[_name] = area;
 }
+
 void GuiEventAreas::update(string _name, Uint16 _x, Uint16 _y) {
   areas[_name].x = _x;
   areas[_name].y = _y;
 }
+
 bool GuiEventAreas::isEventInArea(string _name, Uint16 _eventX, Uint16 _eventY) {
   if (_eventX > areas[_name].x &&
       _eventX < areas[_name].x + areas[_name].w &&

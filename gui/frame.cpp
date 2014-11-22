@@ -6,6 +6,7 @@ GuiFrame::GuiFrame(Uint8 _bpp) {
   hasBorder = false;
   setBorderActive(true, true, true, true);
 }
+
 void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   unset();
   frameRect.x = _x;
@@ -21,6 +22,7 @@ void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   );
   hasFrame = true;
 }
+
 void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   borderWidth = _width;
   borderColor.r = _r;
@@ -32,25 +34,31 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   innerRect.w = frameRect.w - 1 - 2 * _width;
   innerRect.h = frameRect.h - 1 - 2 * _width;
 }
+
 void GuiFrame::setBorderActive(bool _top, bool _bottom, bool _left, bool _right) {
   borderActive.top = _top;
   borderActive.bottom = _bottom;
   borderActive.left = _left;
   borderActive.right = _right;
 }
+
 void GuiFrame::move(Uint16 _x, Uint16 _y) {
   frameRect.x -= _x;
   frameRect.y -= _y;
 }
+
 SDL_Rect *GuiFrame::getRect() {
   return &frameRect;
 }
+
 SDL_Rect *GuiFrame::getInnerRect() {
   return &innerRect;
 }
+
 SDL_Surface *GuiFrame::getSurface() {
   return frame;
 }
+
 void GuiFrame::bgFill() {
   if (hasBgColor == true) {
     SDL_FillRect(
@@ -59,6 +67,7 @@ void GuiFrame::bgFill() {
     );
   }
 }
+
 void GuiFrame::drawBorder() {
   if (hasBorder == true) {
     if (borderActive.top == true)
@@ -90,12 +99,14 @@ void GuiFrame::drawBorder() {
       );
   }
 }
+
 void GuiFrame::unset() {
   if (hasFrame == true) {
     SDL_FreeSurface(frame);
     hasFrame = false;
   }
 }
+
 GuiFrame::~GuiFrame() {
   unset();
 }

@@ -7,6 +7,7 @@ GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
   scrollBarWidth = 0;
   selectedEntryIdx = -1;
 }
+
 void GuiListWindow::addListFrame(int _r, int _g, int _b) {
   SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
   addFrame(innerRect->x, innerRect->y, innerRect->w, innerRect->h);
@@ -27,11 +28,13 @@ void GuiListWindow::addListFrame(int _r, int _g, int _b) {
     listFrameRect->w - scrollBarWidth, listFrameRect->h
   );
 }
+
 void GuiListWindow::setEntrySelectionColor(Uint8 _r, Uint8 _g, Uint8 _b) {
   entrySelectionColor.r = _r;
   entrySelectionColor.g = _g;
   entrySelectionColor.b = _b;
 }
+
 void GuiListWindow::setScrollBarOptions(Uint16 _width,
                                         Uint8 _r, Uint8 _g, Uint8 _b) {
   scrollBarWidth = _width;
@@ -39,6 +42,7 @@ void GuiListWindow::setScrollBarOptions(Uint16 _width,
   scrollBarColor.g = _g;
   scrollBarColor.b = _b;
 }
+
 void GuiListWindow::setTextOptions(string _fontFile,
                                    Uint8 _fontSizeTitle, Uint8 _fontSizeText,
                                    Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -49,6 +53,7 @@ void GuiListWindow::setTextOptions(string _fontFile,
   fontColor.g = _g;
   fontColor.b = _b;
 }
+
 void GuiListWindow::addEntry(string _image, string _title, string _text) {
   stGuiListEntry tmp;
   TTF_Font *titleFont = TTF_OpenFont(fontFile.c_str(), fontSizeTitle);
@@ -66,18 +71,21 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
     listEntryHeight = tmp.image->h;
   listEntriesVisibleCount = frames[listFrameIdx]->getRect()->h / listEntryHeight;
 }
+
 void GuiListWindow::changeListOffset(int value) {
   if (listOffset + value >= 0 &&
       listOffset + value < entries.size() - listEntriesVisibleCount) {
     listOffset += value;
   }
 }
+
 void GuiListWindow::selectEntry(Uint16 _y) {
   SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
   SDL_Rect *listFrameRect = frames[listFrameIdx]->getRect();
   _y = _y - mainFrameRect->y - listFrameRect->y;
   selectedEntryIdx = listOffset + (_y / listEntryHeight);
 }
+
 void GuiListWindow::drawScrollBar(Uint16 entryHeight) {
   if (scrollBarWidth > 0) {
     SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
@@ -114,6 +122,7 @@ void GuiListWindow::drawScrollBar(Uint16 entryHeight) {
     );
   }
 }
+
 void GuiListWindow::update() {
   GuiWindow::update();
   SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
@@ -164,5 +173,6 @@ void GuiListWindow::update() {
     );
   }
 }
+
 GuiListWindow::~GuiListWindow() {
 }

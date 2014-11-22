@@ -8,13 +8,13 @@
 #include "textwindow.hpp"
 #include "listwindow.hpp"
 
-// ----> MAIN
 void screenBgFill(SDL_Surface *screen) {
   SDL_FillRect(
     screen, &screen->clip_rect,
     SDL_MapRGB(screen->format, 120, 120, 120)
   );
 }
+
 int main (int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
   TTF_Init();

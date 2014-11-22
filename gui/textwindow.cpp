@@ -3,6 +3,7 @@
 GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
   textFrameIdx = -1;
 }
+
 void GuiTextWindow::addTextFrame(Uint8 _padding, int _r, int _g, int _b) {
   SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
   innerRect->w -= _padding * 2;
@@ -13,6 +14,7 @@ void GuiTextWindow::addTextFrame(Uint8 _padding, int _r, int _g, int _b) {
   textFrameIdx = frames.size() - 1;
   frames[textFrameIdx]->setBgColor(-1, -1, -1);
 }
+
 vector<string> GuiTextWindow::wrapText(
                  TTF_Font *_font, const string &_text, unsigned _maxWidth
                ) {
@@ -39,6 +41,7 @@ vector<string> GuiTextWindow::wrapText(
   }
   return lines;
 }
+
 void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
                             Uint8 _r, Uint8 _g, Uint8 _b) {
   fontSize = _fontSize;
@@ -50,6 +53,7 @@ void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
   textLines = wrapText(font, _text, frames[mainFrameIdx]->getInnerRect()->w);
   TTF_CloseFont(font);
 }
+
 void GuiTextWindow::update() {
   GuiWindow::update();
   if (fullUpdate == true && textFrameIdx > -1 && textLines.size() > 0) {
@@ -77,5 +81,6 @@ void GuiTextWindow::update() {
       screen, frames[mainFrameIdx]->getRect());
   }
 }
+
 GuiTextWindow::~GuiTextWindow() {
 }

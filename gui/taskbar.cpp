@@ -2,6 +2,7 @@
 
 GuiTaskBar::GuiTaskBar(SDL_Surface *_screen) : GuiElement(_screen) {
 }
+
 void GuiTaskBar::init(bool _isBottom, Uint8 _height, Uint8 _borderWidth,
                       int _bgR, int _bgG, int _bgB,
                       int _borderR, int _borderG, int _borderB) {
@@ -21,8 +22,10 @@ void GuiTaskBar::init(bool _isBottom, Uint8 _height, Uint8 _borderWidth,
     );
   }
 }
+
 void GuiTaskBar::update() {
   GuiElement::update();
 }
+
 GuiTaskBar::~GuiTaskBar() {
 }
