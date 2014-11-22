@@ -2,6 +2,7 @@
 #include "SDL/SDL_ttf.h"
 #include "SDL/SDL_image.h"
 #include "SDL/SDL_gfxPrimitives.h"
+#include <cmath>
 #include <map>
 #include <vector>
 #include <iostream>
@@ -520,17 +521,22 @@ class GuiListWindow: public GuiWindow {
     Uint8 fontSizeTitle;
     Uint8 fontSizeText;
     struct stGuiRgbColor fontColor;
+    Uint16 scrollBarWidth;
+    struct stGuiRgbColor scrollBarColor;
   public:
     GuiListWindow(SDL_Surface *);
     void addListFrame(int, int, int);
+    void setScrollBarOptions(Uint16, Uint8, Uint8, Uint8);
     void setTextOptions(string, Uint8, Uint8, Uint8, Uint8, Uint8);
     void addEntry(string, string, string);
     void changeListOffset(int);
+    void drawScrollBar(Uint16);
     virtual void update();
     virtual ~GuiListWindow();
 };
 GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
   listOffset = 0;
+  scrollBarWidth = 0;
 }
 void GuiListWindow::addListFrame(int _r, int _g, int _b) {
   SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
@@ -545,6 +551,13 @@ void GuiListWindow::addListFrame(int _r, int _g, int _b) {
     mainFrameRect->y + listFrameRect->y,
     listFrameRect->w, listFrameRect->h
   );
+}
+void GuiListWindow::setScrollBarOptions(Uint16 _width,
+                                        Uint8 _r, Uint8 _g, Uint8 _b) {
+  scrollBarWidth = _width;
+  scrollBarColor.r = _r;
+  scrollBarColor.g = _g;
+  scrollBarColor.b = _b;
 }
 void GuiListWindow::setTextOptions(string _fontFile,
                                    Uint8 _fontSizeTitle, Uint8 _fontSizeText,
@@ -571,6 +584,40 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
 void GuiListWindow::changeListOffset(int value) {
   if (listOffset + value >= 0 && listOffset + value < entries.size()) {
     listOffset += value;
+  }
+}
+void GuiListWindow::drawScrollBar(Uint16 entryHeight) {
+  if (scrollBarWidth > 0) {
+    SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
+    SDL_Rect *listFrameRect = frames[listFrameIdx]->getRect();
+
+    Uint16 sliderMargin = scrollBarWidth / 6;
+    Uint16 sliderWidth = scrollBarWidth - sliderMargin * 2;
+    Uint16 sliderOffsetY = floor(
+      (float)listOffset * ((listFrameRect->h - 1. - sliderMargin) / (float)entries.size())
+    );
+    Uint16 sliderHeight = floor(
+      (listFrameRect->h - 1. - sliderMargin) / (float)entries.size()
+    ) - sliderMargin;
+    Uint16 barWidth = sliderWidth + 2 * sliderMargin;
+
+    lineRGBA(
+      listFrameSurface,
+      listFrameRect->w - barWidth, 0,
+      listFrameRect->w - barWidth, listFrameRect->h - 1,
+      scrollBarColor.r, scrollBarColor.g, scrollBarColor.b, 255
+    );
+    boxRGBA(
+      listFrameSurface,
+      listFrameRect->w - barWidth + sliderMargin,
+      sliderOffsetY + sliderMargin,
+      listFrameRect->w - barWidth + sliderMargin + sliderWidth,
+      sliderOffsetY + sliderMargin + sliderHeight,
+      scrollBarColor.r, scrollBarColor.g, scrollBarColor.b, 255
+    );
+    SDL_BlitSurface(
+      listFrameSurface, NULL, frames[mainFrameIdx]->getSurface(), listFrameRect
+    );
   }
 }
 void GuiListWindow::update() {
@@ -603,6 +650,7 @@ void GuiListWindow::update() {
       if (tmpRect.y > listFrameRect->h)
         break;
     }
+    drawScrollBar(tmpRect.y / (entries.size() - listOffset + 1));
     SDL_BlitSurface(
       frames[mainFrameIdx]->getSurface(), NULL, screen,
       frames[mainFrameIdx]->getRect()
@@ -650,6 +698,7 @@ int main (int argc, char *argv[]) {
   guiLW->addTitleFrame(255, 255, 255);
   guiLW->addListFrame(0, 0, 0);
   guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
+  guiLW->setScrollBarOptions(20, 255, 255, 255);
   guiLW->addEntry("listitem.png", "Title 1", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 2", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 3", "Lorem ipsum dolor sit amet.");
