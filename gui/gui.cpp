@@ -176,6 +176,7 @@ class GuiScreen: public GuiBgColor {
     SDL_Surface *screen;
     vector<GuiFrame *> frames;
   public:
+    bool redrawOnUpdate;
     GuiEventAreas eventAreas;
     GuiScreen(SDL_Surface *);
     GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
@@ -186,6 +187,7 @@ class GuiScreen: public GuiBgColor {
 GuiScreen::GuiScreen(SDL_Surface *_screen) {
   screen = _screen;
   hasBgColor = false;
+  redrawOnUpdate = true;
 }
 GuiFrame *GuiScreen::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   GuiFrame *tempFrame = new GuiFrame(screen->format->BytesPerPixel * 8);
@@ -206,8 +208,10 @@ void GuiScreen::update() {
   if (frames.size() > 0) {
     vector<GuiFrame *>::iterator it;
     for (it = frames.begin(); it != frames.end(); it++) {
-      (*it)->bgFill();
-      (*it)->drawBorder();
+      if (redrawOnUpdate == true) {
+        (*it)->bgFill();
+        (*it)->drawBorder();
+      }
       SDL_BlitSurface((*it)->getSurface(), NULL, screen, (*it)->getRect());
     }
   }
@@ -231,6 +235,7 @@ class GuiWindow: public GuiScreen {
     SDL_Surface *closeBtnText;
     bool hasCloseBtnText;
     SDL_Rect closeBtnRect;
+    SDL_Rect moveRect;
     SDL_Rect *innerRect;
   public:
     GuiWindow(SDL_Surface *);
@@ -312,23 +317,27 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
 void GuiWindow::update() {
   GuiScreen::update();
   if (titleFrameIdx > -1) {
-    SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
     SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
     eventAreas.update(
       "windowMoveBar", titleFrameRect->x, titleFrameRect->y
     );
-    if (hasTitleText == true) {
-      SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
-    }
     if (hasCloseBtnText == true) {
-      SDL_BlitSurface(closeBtnText, NULL, titleFrameSurface, &closeBtnRect);
       eventAreas.update(
         "windowCloseButton",
         titleFrameRect->x + closeBtnRect.x,
         titleFrameRect->y + closeBtnRect.y
       );
     }
-    SDL_BlitSurface(titleFrameSurface, NULL, screen, titleFrameRect);
+    if (redrawOnUpdate == true) {
+      SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
+      if (hasTitleText == true && redrawOnUpdate == true) {
+        SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
+      }
+      if (hasCloseBtnText == true) {
+        SDL_BlitSurface(closeBtnText, NULL, titleFrameSurface, &closeBtnRect);
+      }
+      SDL_BlitSurface(titleFrameSurface, NULL, screen, titleFrameRect);
+    }
   }
 }
 void GuiWindow::unsetTitleText() {
@@ -432,6 +441,7 @@ void GuiTextWindow::unsetText() {
 void GuiTextWindow::update() {
   GuiWindow::update();
   if (hasText == true) {
+    // todo: use frame to handle redraw on update
     SDL_BlitSurface(text, NULL, screen, innerRect);
   }
 }
@@ -493,7 +503,7 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
 }
 void GuiListWindow::update() {
   GuiWindow::update();
-  if (entries.size() > 0) {
+  if (entries.size() > 0 && redrawOnUpdate == true) {
     SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
     SDL_Rect tmpRect;
     tmpRect.x = 0;
