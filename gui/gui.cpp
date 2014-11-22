@@ -602,6 +602,8 @@ int main (int argc, char *argv[]) {
   SDL_WM_SetCaption("SDL GUI", NULL);
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
+  vector<GuiWindow *>windows;
+
   GuiTextWindow *guiTW = new GuiTextWindow(screen);
   guiTW->setTitle("TEST TEXT WINDOW", 18, "libertysans.ttf", 0, 0, 0);
   guiTW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
@@ -613,6 +615,7 @@ int main (int argc, char *argv[]) {
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
   );
+  windows.push_back(guiTW);
 
   GuiListWindow *guiLW = new GuiListWindow(screen);
   guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
@@ -632,10 +635,13 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 8", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
+  windows.push_back(guiLW);
 
   screenBgFill(screen);
-  guiTW->update();
-  guiLW->update();
+  Uint8 windowIdx;
+  for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+    windows[windowIdx]->update();
+  }
   SDL_UpdateRect(screen, 0, 0, 0, 0);
 
   SDL_Event event;
@@ -643,12 +649,6 @@ int main (int argc, char *argv[]) {
   Uint32 frameStart = 0;
   bool quit = false;
   bool lMouseBtnDown = false;
-  enum {
-    NO_WINDOW,
-    TEXT_WINDOW,
-    LIST_WINDOW
-  };
-  Uint8 activeWindow = NO_WINDOW;
 
   while (quit == false) {
     frameStart = SDL_GetTicks();
@@ -657,6 +657,27 @@ int main (int argc, char *argv[]) {
       if (event.type == SDL_MOUSEBUTTONDOWN &&
           event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = true;
+        bool windowCloseEvent = false;
+
+        for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+          if (windows[windowIdx]->eventAreas.isEventInArea(
+              "windowCloseButton", event.button.x, event.button.y) == true
+             ) {
+            delete windows[windowIdx];
+            windows.erase(windows.begin() + windowIdx);
+            windowCloseEvent = true;
+          }
+        }
+        if (windowCloseEvent == true) {
+          screenBgFill(screen);
+          for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+            windows[windowIdx]->fullUpdate = false;
+            windows[windowIdx]->update();
+          }
+          windowCloseEvent = false;
+        }
+      }
+        /*
         if (guiTW->eventAreas.isEventInArea(
               "windowCloseButton", event.button.x, event.button.y) == true
            ) {
@@ -668,14 +689,14 @@ int main (int argc, char *argv[]) {
         } else if (guiTW->eventAreas.isEventInArea(
               "windowMoveBar", event.button.x, event.button.y) == true
            ) {
-          activeWindow = TEXT_WINDOW;
+          //activeWindow = TEXT_WINDOW;
         } else if (guiLW->eventAreas.isEventInArea(
                     "windowMoveBar", event.button.x, event.button.y) == true
                   ) {
-          activeWindow = LIST_WINDOW;
+          //activeWindow = LIST_WINDOW;
         }
       } else if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
-        if (activeWindow == TEXT_WINDOW && guiTW->eventAreas.isEventInArea(
+        if (guiTW->eventAreas.isEventInArea(
               "windowMoveBar", event.button.x, event.button.y) == true
            ) {
           screenBgFill(screen);
@@ -683,7 +704,7 @@ int main (int argc, char *argv[]) {
           guiLW->update();
           guiTW->setMove(event.button.x, event.button.y);
           guiTW->update();
-        } else if (activeWindow == LIST_WINDOW && guiLW->eventAreas.isEventInArea(
+        } else if (guiLW->eventAreas.isEventInArea(
                     "windowMoveBar", event.button.x, event.button.y) == true
                   ) {
           screenBgFill(screen);
@@ -695,10 +716,10 @@ int main (int argc, char *argv[]) {
       } else if (event.type == SDL_MOUSEBUTTONUP &&
                  event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = false;
-        activeWindow = NO_WINDOW;
+        //activeWindow = NO_WINDOW;
         guiLW->resetMove();
         guiTW->resetMove();
-      }
+      }*/
       switch (event.type) {
         case SDL_QUIT:
           quit = 1;
@@ -727,8 +748,11 @@ int main (int argc, char *argv[]) {
     }
   }
 
-  delete guiTW;
-  delete guiLW;
+  for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
+    delete windows[windowIdx];
+  }
+  windows.clear();
+
   TTF_Quit();
   SDL_Quit();
   return 0;
