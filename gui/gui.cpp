@@ -517,26 +517,33 @@ class GuiListWindow: public GuiWindow {
     vector<stGuiListEntry> entries;
     Uint16 listFrameIdx;
     Uint16 listOffset;
+    Uint16 listEntryHeight;
+    Sint16 selectedEntryIdx;
     string fontFile;
     Uint8 fontSizeTitle;
     Uint8 fontSizeText;
     struct stGuiRgbColor fontColor;
     Uint16 scrollBarWidth;
     struct stGuiRgbColor scrollBarColor;
+    struct stGuiRgbColor entrySelectionColor;
   public:
     GuiListWindow(SDL_Surface *);
     void addListFrame(int, int, int);
+    void setEntrySelectionColor(Uint8, Uint8, Uint8);
     void setScrollBarOptions(Uint16, Uint8, Uint8, Uint8);
     void setTextOptions(string, Uint8, Uint8, Uint8, Uint8, Uint8);
     void addEntry(string, string, string);
     void changeListOffset(int);
+    void selectEntry(Uint16);
     void drawScrollBar(Uint16);
     virtual void update();
     virtual ~GuiListWindow();
 };
 GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
   listOffset = 0;
+  listEntryHeight = 0;
   scrollBarWidth = 0;
+  selectedEntryIdx = -1;
 }
 void GuiListWindow::addListFrame(int _r, int _g, int _b) {
   SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
@@ -551,6 +558,17 @@ void GuiListWindow::addListFrame(int _r, int _g, int _b) {
     mainFrameRect->y + listFrameRect->y,
     listFrameRect->w, listFrameRect->h
   );
+  eventAreas.add(
+    "windowListEntrySelect",
+    mainFrameRect->x + listFrameRect->x,
+    mainFrameRect->y + listFrameRect->y,
+    listFrameRect->w - scrollBarWidth, listFrameRect->h
+  );
+}
+void GuiListWindow::setEntrySelectionColor(Uint8 _r, Uint8 _g, Uint8 _b) {
+  entrySelectionColor.r = _r;
+  entrySelectionColor.g = _g;
+  entrySelectionColor.b = _b;
 }
 void GuiListWindow::setScrollBarOptions(Uint16 _width,
                                         Uint8 _r, Uint8 _g, Uint8 _b) {
@@ -580,11 +598,21 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
   TTF_CloseFont(titleFont);
   TTF_CloseFont(textFont);
   entries.push_back(tmp);
+
+  listEntryHeight = tmp.titleText->h + tmp.text->h;
+  if (tmp.image != NULL && tmp.image->h > listEntryHeight)
+    listEntryHeight = tmp.image->h;
 }
 void GuiListWindow::changeListOffset(int value) {
   if (listOffset + value >= 0 && listOffset + value < entries.size()) {
     listOffset += value;
   }
+}
+void GuiListWindow::selectEntry(Uint16 _y) {
+  SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
+  SDL_Rect *listFrameRect = frames[listFrameIdx]->getRect();
+  _y = _y - mainFrameRect->y - listFrameRect->y;
+  selectedEntryIdx = listOffset + (_y / listEntryHeight);
 }
 void GuiListWindow::drawScrollBar(Uint16 entryHeight) {
   if (scrollBarWidth > 0) {
@@ -629,6 +657,11 @@ void GuiListWindow::update() {
     mainFrameRect->x + listFrameRect->x,
     mainFrameRect->y + listFrameRect->y
   );
+  eventAreas.update(
+    "windowListEntrySelect",
+    mainFrameRect->x + listFrameRect->x,
+    mainFrameRect->y + listFrameRect->y
+  );
   if (entries.size() > 0 && fullUpdate == true) {
     SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
     SDL_Rect tmpRect;
@@ -636,6 +669,14 @@ void GuiListWindow::update() {
     tmpRect.y = 0;
     for (Uint8 i = listOffset; i < entries.size(); i++) {
       tmpRect.x = 0;
+      if (selectedEntryIdx == i) {
+        boxRGBA(
+          listFrameSurface,
+          tmpRect.x, tmpRect.y,
+          listFrameRect->w - scrollBarWidth, tmpRect.y + listEntryHeight,
+          entrySelectionColor.r, entrySelectionColor.g, entrySelectionColor.b, 255
+        );
+      }
       if (entries[i].image != NULL) {
         SDL_BlitSurface(entries[i].image, NULL, listFrameSurface, &tmpRect);
         tmpRect.x += entries[i].image->w;
@@ -644,12 +685,12 @@ void GuiListWindow::update() {
       tmpRect.y += entries[i].titleText->h;
       SDL_BlitSurface(entries[i].text, NULL, listFrameSurface, &tmpRect);
       tmpRect.y += entries[i].text->h;
-      SDL_BlitSurface(
-        listFrameSurface, NULL, frames[mainFrameIdx]->getSurface(), listFrameRect
-      );
       if (tmpRect.y > listFrameRect->h)
         break;
     }
+    SDL_BlitSurface(
+      listFrameSurface, NULL, frames[mainFrameIdx]->getSurface(), listFrameRect
+    );
     drawScrollBar(tmpRect.y / (entries.size() - listOffset + 1));
     SDL_BlitSurface(
       frames[mainFrameIdx]->getSurface(), NULL, screen,
@@ -672,7 +713,7 @@ int main (int argc, char *argv[]) {
   TTF_Init();
 
   SDL_WM_SetCaption("SDL GUI", NULL);
-  SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
+  SDL_Surface* screen = SDL_SetVideoMode(800, 600, 32, SDL_SWSURFACE);
 
   vector<GuiWindow *>windows;
   vector<GuiListWindow *>listWindows;
@@ -693,12 +734,13 @@ int main (int argc, char *argv[]) {
   GuiListWindow *guiLW = new GuiListWindow(screen);
   guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
   guiLW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
+  guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
+  guiLW->setScrollBarOptions(20, 255, 255, 255);
+  guiLW->setEntrySelectionColor(100, 100, 100);
   guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 255);
   guiLW->setWindowBorder(5, 255, 255, 255);
   guiLW->addTitleFrame(255, 255, 255);
   guiLW->addListFrame(0, 0, 0);
-  guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
-  guiLW->setScrollBarOptions(20, 255, 255, 255);
   guiLW->addEntry("listitem.png", "Title 1", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 2", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 3", "Lorem ipsum dolor sit amet.");
@@ -733,6 +775,15 @@ int main (int argc, char *argv[]) {
       if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = true;
         bool windowCloseEvent = false;
+
+        for (windowIdx = 0; windowIdx < listWindows.size(); windowIdx++) {
+          if (listWindows[windowIdx]->eventAreas.isEventInArea(
+              "windowListEntrySelect", event.button.x, event.button.y) == true
+             ) {
+            listWindows[windowIdx]->selectEntry(event.button.y);
+            listWindows[windowIdx]->update();
+          }
+        }
 
         for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
           if (windows[windowIdx]->eventAreas.isEventInArea(
