@@ -518,6 +518,7 @@ class GuiListWindow: public GuiWindow {
     Uint16 listFrameIdx;
     Uint16 listOffset;
     Uint16 listEntryHeight;
+    Uint16 listEntriesVisibleCount;
     Sint16 selectedEntryIdx;
     string fontFile;
     Uint8 fontSizeTitle;
@@ -542,6 +543,7 @@ class GuiListWindow: public GuiWindow {
 GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
   listOffset = 0;
   listEntryHeight = 0;
+  listEntriesVisibleCount = 0;
   scrollBarWidth = 0;
   selectedEntryIdx = -1;
 }
@@ -602,9 +604,11 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
   listEntryHeight = tmp.titleText->h + tmp.text->h;
   if (tmp.image != NULL && tmp.image->h > listEntryHeight)
     listEntryHeight = tmp.image->h;
+  listEntriesVisibleCount = frames[listFrameIdx]->getRect()->h / listEntryHeight;
 }
 void GuiListWindow::changeListOffset(int value) {
-  if (listOffset + value >= 0 && listOffset + value < entries.size()) {
+  if (listOffset + value >= 0 &&
+      listOffset + value < entries.size() - listEntriesVisibleCount) {
     listOffset += value;
   }
 }
@@ -622,10 +626,12 @@ void GuiListWindow::drawScrollBar(Uint16 entryHeight) {
     Uint16 sliderMargin = scrollBarWidth / 6;
     Uint16 sliderWidth = scrollBarWidth - sliderMargin * 2;
     Uint16 sliderOffsetY = floor(
-      (float)listOffset * ((listFrameRect->h - 1. - sliderMargin) / (float)entries.size())
+      (float)listOffset * ((listFrameRect->h - 1. - sliderMargin) /
+        (float)(entries.size() - listEntriesVisibleCount))
     );
     Uint16 sliderHeight = floor(
-      (listFrameRect->h - 1. - sliderMargin) / (float)entries.size()
+      (listFrameRect->h - 1. - sliderMargin) /
+        (float)(entries.size() - listEntriesVisibleCount)
     ) - sliderMargin;
     Uint16 barWidth = sliderWidth + 2 * sliderMargin;
 
