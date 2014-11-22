@@ -515,6 +515,7 @@ class GuiListWindow: public GuiWindow {
     Uint8 imageSize;
     vector<stGuiListEntry> entries;
     Uint16 listFrameIdx;
+    Uint16 listOffset;
     string fontFile;
     Uint8 fontSizeTitle;
     Uint8 fontSizeText;
@@ -524,16 +525,26 @@ class GuiListWindow: public GuiWindow {
     void addListFrame(int, int, int);
     void setTextOptions(string, Uint8, Uint8, Uint8, Uint8, Uint8);
     void addEntry(string, string, string);
+    void changeListOffset(int);
     virtual void update();
     virtual ~GuiListWindow();
 };
 GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
+  listOffset = 0;
 }
 void GuiListWindow::addListFrame(int _r, int _g, int _b) {
   SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
   addFrame(innerRect->x, innerRect->y, innerRect->w, innerRect->h);
   listFrameIdx = frames.size() - 1;
   frames[listFrameIdx]->setBgColor(_r, _g, _b);
+  SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
+  SDL_Rect *listFrameRect = frames[listFrameIdx]->getRect();
+  eventAreas.add(
+    "windowListScroll",
+    mainFrameRect->x + listFrameRect->x,
+    mainFrameRect->y + listFrameRect->y,
+    listFrameRect->w, listFrameRect->h
+  );
 }
 void GuiListWindow::setTextOptions(string _fontFile,
                                    Uint8 _fontSizeTitle, Uint8 _fontSizeText,
@@ -557,14 +568,26 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
   TTF_CloseFont(textFont);
   entries.push_back(tmp);
 }
+void GuiListWindow::changeListOffset(int value) {
+  if (listOffset + value >= 0 && listOffset + value < entries.size()) {
+    listOffset += value;
+  }
+}
 void GuiListWindow::update() {
   GuiWindow::update();
+  SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
+  SDL_Rect *listFrameRect = frames[listFrameIdx]->getRect();
+  eventAreas.update(
+    "windowListScroll",
+    mainFrameRect->x + listFrameRect->x,
+    mainFrameRect->y + listFrameRect->y
+  );
   if (entries.size() > 0 && fullUpdate == true) {
     SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
     SDL_Rect tmpRect;
     tmpRect.x = 0;
     tmpRect.y = 0;
-    for (Uint8 i = 0; i < entries.size(); i++) {
+    for (Uint8 i = listOffset; i < entries.size(); i++) {
       tmpRect.x = 0;
       if (entries[i].image != NULL) {
         SDL_BlitSurface(entries[i].image, NULL, listFrameSurface, &tmpRect);
@@ -575,9 +598,10 @@ void GuiListWindow::update() {
       SDL_BlitSurface(entries[i].text, NULL, listFrameSurface, &tmpRect);
       tmpRect.y += entries[i].text->h;
       SDL_BlitSurface(
-        listFrameSurface, NULL, frames[mainFrameIdx]->getSurface(),
-        frames[listFrameIdx]->getRect()
+        listFrameSurface, NULL, frames[mainFrameIdx]->getSurface(), listFrameRect
       );
+      if (tmpRect.y > listFrameRect->h)
+        break;
     }
     SDL_BlitSurface(
       frames[mainFrameIdx]->getSurface(), NULL, screen,
@@ -603,6 +627,7 @@ int main (int argc, char *argv[]) {
   SDL_Surface* screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 
   vector<GuiWindow *>windows;
+  vector<GuiListWindow *>listWindows;
 
   GuiTextWindow *guiTW = new GuiTextWindow(screen);
   guiTW->setTitle("TEST TEXT WINDOW", 18, "libertysans.ttf", 0, 0, 0);
@@ -636,6 +661,7 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
   windows.push_back(guiLW);
+  listWindows.push_back(guiLW);
 
   screenBgFill(screen);
   Uint8 windowIdx;
@@ -707,6 +733,27 @@ int main (int argc, char *argv[]) {
           windows[windowIdx]->resetMove();
         }
         activeMoveWindow = -1;
+
+      } else if (event.type == SDL_MOUSEBUTTONUP) {
+        if (event.button.button == SDL_BUTTON_WHEELUP) {
+          for (windowIdx = 0; windowIdx < listWindows.size(); windowIdx++) {
+            if (listWindows[windowIdx]->eventAreas.isEventInArea(
+                "windowListScroll", event.button.x, event.button.y) == true
+               ) {
+              listWindows[windowIdx]->changeListOffset(-1);
+              listWindows[windowIdx]->update();
+            }
+          }
+        } else if (event.button.button == SDL_BUTTON_WHEELDOWN) {
+          for (windowIdx = 0; windowIdx < listWindows.size(); windowIdx++) {
+            if (listWindows[windowIdx]->eventAreas.isEventInArea(
+                "windowListScroll", event.button.x, event.button.y) == true
+               ) {
+              listWindows[windowIdx]->changeListOffset(1);
+              listWindows[windowIdx]->update();
+            }
+          }
+        }
       }
       switch (event.type) {
         case SDL_QUIT:
@@ -740,6 +787,7 @@ int main (int argc, char *argv[]) {
     delete windows[windowIdx];
   }
   windows.clear();
+  listWindows.clear();
 
   TTF_Quit();
   SDL_Quit();
