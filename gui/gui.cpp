@@ -331,8 +331,8 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
     addFrame(innerRect->x, innerRect->y, innerRect->w, titleText->h + mainFrameBorderWidth);
     titleFrameIdx = frames.size() - 1;
     frames[titleFrameIdx]->setBgColor(_r, _g, _b);
-    innerRect->y += titleText->h;
-    innerRect->h -= titleText->h;
+    innerRect->y += titleText->h + mainFrameBorderWidth;
+    innerRect->h -= titleText->h + mainFrameBorderWidth;
     SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
     SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
     eventAreas.add(
@@ -428,14 +428,14 @@ GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
   textFrameIdx = -1;
 }
 void GuiTextWindow::addTextFrame(Uint8 _padding, int _r, int _g, int _b) {
-  SDL_Rect *innerRect = frames[mainFrameIdx]->getRect();
+  SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
   innerRect->w -= _padding * 2;
   innerRect->h -= _padding * 2;
   innerRect->x += _padding;
   innerRect->y += _padding;
   addFrame(innerRect->x, innerRect->y, innerRect->w, innerRect->h);
   textFrameIdx = frames.size() - 1;
-  frames[textFrameIdx]->setBgColor(_r, _g, _b);
+  frames[textFrameIdx]->setBgColor(-1, -1, -1);
 }
 vector<string> GuiTextWindow::wrapText(
                  TTF_Font *_font, const string &_text, unsigned _maxWidth
@@ -493,7 +493,12 @@ void GuiTextWindow::update() {
     };
     SDL_FreeSurface(text);
     TTF_CloseFont(font);
-    SDL_BlitSurface(textFrameSurface, NULL, screen, frames[textFrameIdx]->getRect());
+    SDL_BlitSurface(
+      textFrameSurface, NULL,
+      frames[mainFrameIdx]->getSurface(), frames[textFrameIdx]->getRect()
+    );
+    SDL_BlitSurface(frames[mainFrameIdx]->getSurface(), NULL,
+      screen, frames[mainFrameIdx]->getRect());
   }
 }
 GuiTextWindow::~GuiTextWindow() {
@@ -593,14 +598,14 @@ int main (int argc, char *argv[]) {
   GuiTextWindow *guiTW = new GuiTextWindow(screen);
   guiTW->setTitle("TEST TEXT WINDOW", 18, "libertysans.ttf", 0, 0, 0);
   guiTW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
-  guiTW->addWindowFrame(10, 10, 300, 300, 255, 0, 0);
+  guiTW->addWindowFrame(10, 10, 300, 300, 0, 0, 0);
   guiTW->setWindowBorder(5, 255, 255, 255);
   guiTW->addTitleFrame(255, 255, 255);
-  /*guiTW->addTextFrame(5, 0, 0, 0);
+  guiTW->addTextFrame(5, 0, 0, 0);
   guiTW->setText(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
-  );*/
+  );
 
   GuiListWindow *guiLW = new GuiListWindow(screen);
   guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
