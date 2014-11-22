@@ -72,7 +72,7 @@ class GuiFrame: public GuiBgColor {
     Uint8 bpp;
     SDL_Surface *frame;
     SDL_Rect frameRect;
-    SDL_Rect innerFrameRect;
+    SDL_Rect innerRect;
     bool hasFrame;
     bool hasBorder;
     Uint8 borderWidth;
@@ -101,7 +101,10 @@ void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   frameRect.y = _y;
   frameRect.w = _w;
   frameRect.h = _h;
-  innerFrameRect = frameRect;
+  innerRect.x = 0;
+  innerRect.y = 0;
+  innerRect.w = _w;
+  innerRect.h = _h;
   frame = SDL_CreateRGBSurface(
     0, frameRect.w, frameRect.h, bpp, 0, 0, 0, 0
   );
@@ -113,22 +116,20 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   borderColor.g = _g;
   borderColor.b = _b;
   hasBorder = true;
-  innerFrameRect.x += _width;
-  innerFrameRect.y += _width;
-  innerFrameRect.w = frameRect.w - 1 - 2 * _width;
-  innerFrameRect.h = frameRect.h - 1 - 2 * _width;
+  innerRect.x += _width;
+  innerRect.y += _width;
+  innerRect.w = frameRect.w - 1 - 2 * _width;
+  innerRect.h = frameRect.h - 1 - 2 * _width;
 }
 void GuiFrame::move(Uint16 _x, Uint16 _y) {
   frameRect.x -= _x;
   frameRect.y -= _y;
-  innerFrameRect.x -= _x;
-  innerFrameRect.y -= _y;
 }
 SDL_Rect *GuiFrame::getRect() {
   return &frameRect;
 }
 SDL_Rect *GuiFrame::getInnerRect() {
-  return &innerFrameRect;
+  return &innerRect;
 }
 SDL_Surface *GuiFrame::getSurface() {
   return frame;
@@ -181,18 +182,22 @@ GuiFrame::~GuiFrame() {
 class GuiElement {
   protected:
     SDL_Surface *screen;
+    int mainFrameIdx;
     vector<GuiFrame *> frames;
   public:
-    bool redrawOnUpdate;
+    bool fullUpdate;
     GuiEventAreas eventAreas;
     GuiElement(SDL_Surface *);
     GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
+    GuiFrame *addMainFrame(Uint16, Uint16, Uint16, Uint16);
+    void setMainFrameBgColor(int, int, int);
     virtual void update();
     virtual ~GuiElement();
 };
 GuiElement::GuiElement(SDL_Surface *_screen) {
   screen = _screen;
-  redrawOnUpdate = true;
+  mainFrameIdx = -1;
+  fullUpdate = true;
 }
 GuiFrame *GuiElement::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   GuiFrame *tempFrame = new GuiFrame(screen->format->BytesPerPixel * 8);
@@ -200,16 +205,36 @@ GuiFrame *GuiElement::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   frames.push_back(tempFrame);
   return tempFrame;
 }
+GuiFrame *GuiElement::addMainFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
+  GuiFrame *tempFrame = addFrame(_x, _y, _w, _h);
+  mainFrameIdx = frames.size() - 1;
+  return tempFrame;
+}
+void GuiElement::setMainFrameBgColor(int _r, int _g, int _b) {
+  if (mainFrameIdx > -1) {
+    frames[mainFrameIdx]->setBgColor(_r, _g, _b);
+  }
+}
 void GuiElement::update() {
-  if (frames.size() > 0) {
-    vector<GuiFrame *>::iterator it;
-    for (it = frames.begin(); it != frames.end(); it++) {
-      if (redrawOnUpdate == true) {
-        (*it)->bgFill();
-        (*it)->drawBorder();
-      }
-      SDL_BlitSurface((*it)->getSurface(), NULL, screen, (*it)->getRect());
+  if (mainFrameIdx > -1) {
+    if (fullUpdate == true) {
+      frames[mainFrameIdx]->bgFill();
+      frames[mainFrameIdx]->drawBorder();
     }
+    SDL_Surface *mainFrameSurface = frames[mainFrameIdx]->getSurface();
+    if (fullUpdate == true && frames.size() > 0) {
+      vector<GuiFrame *>::iterator it;
+      int i = 0;
+      for (it = frames.begin(); it != frames.end(); it++) {
+        if (i != mainFrameIdx) {
+          (*it)->bgFill();
+          (*it)->drawBorder();
+          SDL_BlitSurface((*it)->getSurface(), NULL, mainFrameSurface, (*it)->getRect());
+        }
+        i++;
+      }
+    }
+    SDL_BlitSurface(mainFrameSurface, NULL, screen, frames[mainFrameIdx]->getRect());
   }
 }
 GuiElement::~GuiElement() {
@@ -223,15 +248,13 @@ GuiElement::~GuiElement() {
 // ----> GUI WINDOW
 class GuiWindow: public GuiElement {
   protected:
-    int windowFrameIdx;
-    Uint8 windowBorderWidth;
+    Uint8 mainFrameBorderWidth;
     int titleFrameIdx;
     SDL_Surface *titleText;
     bool hasTitleText;
     SDL_Surface *closeBtnText;
     bool hasCloseBtnText;
     SDL_Rect closeBtnRect;
-    SDL_Rect *innerRect;
     SDL_Rect moveRect;
   public:
     GuiWindow(SDL_Surface *);
@@ -250,27 +273,24 @@ class GuiWindow: public GuiElement {
 GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiElement(_screen) {
   hasTitleText = false;
   hasCloseBtnText = false;
-  windowFrameIdx = -1;
   titleFrameIdx = -1;
+  mainFrameBorderWidth = 0;
   resetMove();
 }
 void GuiWindow::resetMove() {
-  redrawOnUpdate = true;
+  fullUpdate = true;
   moveRect.x = -1;
   moveRect.y = -1;
 }
 void GuiWindow::setMove(Uint16 _x, Uint16 _y) {
-  redrawOnUpdate = false;
+  fullUpdate = false;
   if (moveRect.x > -1 && moveRect.y > -1) {
-    SDL_Rect *windowFrameRect = frames[windowFrameIdx]->getRect();
-    if (windowFrameRect->x - (moveRect.x - _x) > 0 &&
-        windowFrameRect->y - (moveRect.y - _y) > 0 &&
-        windowFrameRect->x + windowFrameRect->w - (moveRect.x - _x) < screen->w &&
-        windowFrameRect->y + windowFrameRect->h - (moveRect.y - _y) < screen->h) {
-      vector<GuiFrame *>::iterator it;
-      for (it = frames.begin(); it != frames.end(); it++) {
-        (*it)->move(moveRect.x - _x, moveRect.y - _y);
-      }
+    SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
+    if (mainFrameRect->x - (moveRect.x - _x) > 0 &&
+        mainFrameRect->y - (moveRect.y - _y) > 0 &&
+        mainFrameRect->x + mainFrameRect->w - (moveRect.x - _x) < screen->w &&
+        mainFrameRect->y + mainFrameRect->h - (moveRect.y - _y) < screen->h) {
+      frames[mainFrameIdx]->move(moveRect.x - _x, moveRect.y - _y);
     }
   }
   moveRect.x = _x;
@@ -296,40 +316,41 @@ void GuiWindow::setCloseBtn(Uint8 _fontSize, string _fontFile,
 }
 void GuiWindow::addWindowFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h,
                                Uint8 _r, Uint8 _g, Uint8 _b) {
-  addFrame(_x, _y, _w, _h);
-  windowFrameIdx = frames.size() - 1;
-  frames[windowFrameIdx]->setBgColor(_r, _g, _b);
-  innerRect = frames[windowFrameIdx]->getInnerRect();
+  addMainFrame(_x, _y, _w, _h);
+  setMainFrameBgColor(_r, _g, _b);
 }
 void GuiWindow::setWindowBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
-  if (windowFrameIdx > -1) {
-    windowBorderWidth = _width;
-    frames[windowFrameIdx]->setBorder(_width, _r, _g, _b);
-    innerRect = frames[windowFrameIdx]->getInnerRect();
+  if (mainFrameIdx > -1) {
+    mainFrameBorderWidth = _width;
+    frames[mainFrameIdx]->setBorder(mainFrameBorderWidth, _r, _g, _b);
   }
 }
 void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
-  if (hasTitleText == true && windowFrameIdx > -1) {
-    addFrame(innerRect->x, innerRect->y, innerRect->w, titleText->h + windowBorderWidth);
+  if (mainFrameIdx > -1 && hasTitleText == true) {
+    SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
+    addFrame(innerRect->x, innerRect->y, innerRect->w, titleText->h + mainFrameBorderWidth);
     titleFrameIdx = frames.size() - 1;
     frames[titleFrameIdx]->setBgColor(_r, _g, _b);
-    innerRect->y += titleText->h + windowBorderWidth;
-    innerRect->h -= titleText->h + windowBorderWidth;
+    innerRect->y += titleText->h;
+    innerRect->h -= titleText->h;
     SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
+    SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
     eventAreas.add(
-      "windowMoveBar", titleFrameRect->x, titleFrameRect->y,
+      "windowMoveBar",
+      mainFrameRect->x + titleFrameRect->x,
+      mainFrameRect->y + titleFrameRect->y,
       titleFrameRect->w, titleFrameRect->h
     );
     if (hasCloseBtnText == true) {
-      SDL_Surface *frameSurface = frames[titleFrameIdx]->getSurface();
-      closeBtnRect.x = frameSurface->w - closeBtnText->w;
+      SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
+      closeBtnRect.x = titleFrameSurface->w - closeBtnText->w;
       closeBtnRect.y = 0;
       closeBtnRect.w = closeBtnText->w;
       closeBtnRect.h = closeBtnText->h;
       eventAreas.add(
         "windowCloseButton",
-        titleFrameRect->x + closeBtnRect.x,
-        titleFrameRect->y + closeBtnRect.y,
+        mainFrameRect->x + titleFrameRect->x + closeBtnRect.x,
+        mainFrameRect->y + titleFrameRect->y + closeBtnRect.y,
         closeBtnRect.w, closeBtnRect.h
       );
     }
@@ -338,26 +359,33 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
 void GuiWindow::update() {
   GuiElement::update();
   if (titleFrameIdx > -1) {
+    SDL_Rect *mainFrameRect = frames[mainFrameIdx]->getRect();
     SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
     eventAreas.update(
-      "windowMoveBar", titleFrameRect->x, titleFrameRect->y
+      "windowMoveBar",
+      mainFrameRect->x + titleFrameRect->x,
+      mainFrameRect->y + titleFrameRect->y
     );
     if (hasCloseBtnText == true) {
       eventAreas.update(
         "windowCloseButton",
-        titleFrameRect->x + closeBtnRect.x,
-        titleFrameRect->y + closeBtnRect.y
+        mainFrameRect->x + titleFrameRect->x + closeBtnRect.x,
+        mainFrameRect->y + titleFrameRect->y + closeBtnRect.y
       );
     }
-    if (redrawOnUpdate == true) {
+    if (fullUpdate == true) {
       SDL_Surface *titleFrameSurface = frames[titleFrameIdx]->getSurface();
-      if (hasTitleText == true && redrawOnUpdate == true) {
+      if (hasTitleText == true) {
         SDL_BlitSurface(titleText, NULL, titleFrameSurface, NULL);
       }
       if (hasCloseBtnText == true) {
         SDL_BlitSurface(closeBtnText, NULL, titleFrameSurface, &closeBtnRect);
       }
-      SDL_BlitSurface(titleFrameSurface, NULL, screen, titleFrameRect);
+      SDL_Surface *mainFrameSurface = frames[mainFrameIdx]->getSurface();
+      SDL_BlitSurface(
+        titleFrameSurface, NULL, mainFrameSurface, titleFrameRect
+      );
+      SDL_BlitSurface(mainFrameSurface, NULL, screen, frames[mainFrameIdx]->getRect());
     }
   }
 }
@@ -400,6 +428,7 @@ GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
   textFrameIdx = -1;
 }
 void GuiTextWindow::addTextFrame(Uint8 _padding, int _r, int _g, int _b) {
+  SDL_Rect *innerRect = frames[mainFrameIdx]->getRect();
   innerRect->w -= _padding * 2;
   innerRect->h -= _padding * 2;
   innerRect->x += _padding;
@@ -442,12 +471,12 @@ void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
   fontColor.g = _g;
   fontColor.b = _b;
   TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
-  textLines = wrapText(font, _text, innerRect->w);
+  textLines = wrapText(font, _text, frames[mainFrameIdx]->getInnerRect()->w);
   TTF_CloseFont(font);
 }
 void GuiTextWindow::update() {
   GuiWindow::update();
-  if (redrawOnUpdate == true && textFrameIdx > -1 && textLines.size() > 0) {
+  if (fullUpdate == true && textFrameIdx > -1 && textLines.size() > 0) {
     TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
     SDL_Color tmpFontColor = { fontColor.r, fontColor.g, fontColor.b };
     SDL_Surface *textFrameSurface = frames[textFrameIdx]->getSurface();
@@ -496,6 +525,7 @@ class GuiListWindow: public GuiWindow {
 GuiListWindow::GuiListWindow(SDL_Surface *_screen): GuiWindow(_screen) {
 }
 void GuiListWindow::addListFrame(int _r, int _g, int _b) {
+  SDL_Rect *innerRect = frames[mainFrameIdx]->getInnerRect();
   addFrame(innerRect->x, innerRect->y, innerRect->w, innerRect->h);
   listFrameIdx = frames.size() - 1;
   frames[listFrameIdx]->setBgColor(_r, _g, _b);
@@ -524,7 +554,7 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
 }
 void GuiListWindow::update() {
   GuiWindow::update();
-  if (entries.size() > 0 && redrawOnUpdate == true) {
+  if (entries.size() > 0 && fullUpdate == true) {
     SDL_Surface *listFrameSurface = frames[listFrameIdx]->getSurface();
     SDL_Rect tmpRect;
     tmpRect.x = 0;
@@ -563,22 +593,22 @@ int main (int argc, char *argv[]) {
   GuiTextWindow *guiTW = new GuiTextWindow(screen);
   guiTW->setTitle("TEST TEXT WINDOW", 18, "libertysans.ttf", 0, 0, 0);
   guiTW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
-  guiTW->addWindowFrame(10, 10, 300, 300, 0, 0, 0);
+  guiTW->addWindowFrame(10, 10, 300, 300, 255, 0, 0);
   guiTW->setWindowBorder(5, 255, 255, 255);
   guiTW->addTitleFrame(255, 255, 255);
-  guiTW->addTextFrame(5, 0, 0, 0);
+  /*guiTW->addTextFrame(5, 0, 0, 0);
   guiTW->setText(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
-  );
+  );*/
 
   GuiListWindow *guiLW = new GuiListWindow(screen);
   guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
   guiLW->setCloseBtn(18, "libertysans.ttf", 0, 0, 0);
-  guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 0);
+  guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 255);
   guiLW->setWindowBorder(5, 255, 255, 255);
   guiLW->addTitleFrame(255, 255, 255);
-  guiLW->addListFrame(0, 0, 0);
+  /*guiLW->addListFrame(0, 0, 0);
   guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
   guiLW->addEntry("listitem.png", "Title 1", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 2", "Lorem ipsum dolor sit amet.");
@@ -589,7 +619,7 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 7", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 8", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
-  guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");*/
 
   screenBgFill(screen);
   guiTW->update();
@@ -637,7 +667,7 @@ int main (int argc, char *argv[]) {
               "windowMoveBar", event.button.x, event.button.y) == true
            ) {
           screenBgFill(screen);
-          guiLW->redrawOnUpdate = false;
+          guiLW->fullUpdate = false;
           guiLW->update();
           guiTW->setMove(event.button.x, event.button.y);
           guiTW->update();
@@ -645,7 +675,7 @@ int main (int argc, char *argv[]) {
                     "windowMoveBar", event.button.x, event.button.y) == true
                   ) {
           screenBgFill(screen);
-          guiTW->redrawOnUpdate = false;
+          guiTW->fullUpdate = false;
           guiTW->update();
           guiLW->setMove(event.button.x, event.button.y);
           guiLW->update();
