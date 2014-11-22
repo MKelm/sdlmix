@@ -60,7 +60,7 @@ bool GuiEventAreas::isEventInArea(string _name, Uint16 _eventX, Uint16 _eventY) 
   if (_eventX > areas[_name].x &&
       _eventX < areas[_name].x + areas[_name].w &&
       _eventY > areas[_name].y &&
-      _eventY < areas[_name].y + areas[_name].w) {
+      _eventY < areas[_name].y + areas[_name].h) {
     return true;
   }
   return false;
