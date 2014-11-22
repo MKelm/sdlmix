@@ -780,7 +780,7 @@ int main (int argc, char *argv[]) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = true;
-        bool windowCloseEvent = false;
+        bool windowClickEvent = false;
 
         for (windowIdx = 0; windowIdx < listWindows.size(); windowIdx++) {
           if (listWindows[windowIdx]->eventAreas.isEventInArea(
@@ -797,7 +797,7 @@ int main (int argc, char *argv[]) {
              ) {
             delete windows[windowIdx];
             windows.erase(windows.begin() + windowIdx);
-            windowCloseEvent = true;
+            windowClickEvent = true;
           } else if (windows[windowIdx]->eventAreas.isEventInArea(
               "windowMoveBar", event.button.x, event.button.y) == true
              ) {
@@ -808,15 +808,16 @@ int main (int argc, char *argv[]) {
           windows.insert(windows.end(), windows[focusWindowIdx]);
           windows.erase(windows.begin() + focusWindowIdx);
           focusWindowIdx = windows.size() - 1;
+          windowClickEvent = true;
         }
-        if (windowCloseEvent == true) {
+        if (windowClickEvent == true) {
           screenBgFill(screen);
           for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
             windows[windowIdx]->fullUpdate = false;
             windows[windowIdx]->update();
             windows[windowIdx]->fullUpdate = true;
           }
-          windowCloseEvent = false;
+          windowClickEvent = false;
         }
 
       } else if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
