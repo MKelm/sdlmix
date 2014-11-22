@@ -273,9 +273,15 @@ void GuiWindow::resetMove() {
 void GuiWindow::setMove(Uint16 _x, Uint16 _y) {
   redrawOnUpdate = false;
   if (moveRect.x > -1 && moveRect.y > -1) {
-    vector<GuiFrame *>::iterator it;
-    for (it = frames.begin(); it != frames.end(); it++) {
-      (*it)->move(moveRect.x - _x, moveRect.y - _y);
+    SDL_Rect *windowFrameRect = frames[windowFrameIdx]->getRect();
+    if (windowFrameRect->x - (moveRect.x - _x) > 0 &&
+        windowFrameRect->y - (moveRect.y - _y) > 0 &&
+        windowFrameRect->x + windowFrameRect->w - (moveRect.x - _x) < screen->w &&
+        windowFrameRect->y + windowFrameRect->h - (moveRect.y - _y) < screen->h) {
+      vector<GuiFrame *>::iterator it;
+      for (it = frames.begin(); it != frames.end(); it++) {
+        (*it)->move(moveRect.x - _x, moveRect.y - _y);
+      }
     }
   }
   moveRect.x = _x;
