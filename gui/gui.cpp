@@ -585,13 +585,16 @@ int main (int argc, char *argv[]) {
   SDL_UpdateRect(screen, 0, 0, 0, 0);
 
   SDL_Event event;
+  Uint8 maxFPS = 15;
+  Uint32 frameStart = 0;
   bool quit = false;
-  bool lMouseBtnDown = false;
+
   while (quit == false) {
-    if (SDL_PollEvent(&event)) {
+    frameStart = SDL_GetTicks();
+
+    while (SDL_PollEvent(&event)) {
       if (event.type == SDL_MOUSEBUTTONDOWN &&
           event.button.button == SDL_BUTTON_LEFT) {
-        lMouseBtnDown = true;
         if (guiTW->eventAreas.isEventInArea(
               "windowCloseButton", event.button.x, event.button.y) == true
            ) {
@@ -601,9 +604,6 @@ int main (int argc, char *argv[]) {
                   ) {
           cout << "List Window Close Button Event" << endl;
         }
-      }
-      if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
-        lMouseBtnDown = false;
       }
       switch (event.type) {
         case SDL_QUIT:
@@ -625,6 +625,10 @@ int main (int argc, char *argv[]) {
           }
           break;
       }
+    }
+
+    if ((SDL_GetTicks() - frameStart) < (1000 / maxFPS)) {
+      SDL_Delay((1000 / maxFPS) - (SDL_GetTicks() - frameStart));
     }
   }
 
