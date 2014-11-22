@@ -712,6 +712,7 @@ int main (int argc, char *argv[]) {
           }
           windowCloseEvent = false;
         }
+
       } else if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
         bool windowMoveEvent = false;
 
@@ -732,11 +733,13 @@ int main (int argc, char *argv[]) {
           }
           windowMoveEvent = false;
         }
+
       } else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = false;
         for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
           windows[windowIdx]->resetMove();
         }
+        focusWindowIdx = -1;
 
       } else if (event.type == SDL_MOUSEBUTTONUP) {
         if (event.button.button == SDL_BUTTON_WHEELUP) {
