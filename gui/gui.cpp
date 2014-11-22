@@ -387,11 +387,14 @@ GuiWindow::~GuiWindow() {
 class GuiTextWindow: public GuiWindow {
   protected:
     Uint8 textPadding;
-    SDL_Surface *text;
-    bool hasText;
+    int textFrameIdx;
+    vector<string> textLines;
+    Uint8 fontSize;
+    string fontFile;
+    stGuiRgbColor fontColor;
   public:
     GuiTextWindow(SDL_Surface *);
-    void setTextPadding(Uint8);
+    void addTextFrame(Uint8, int, int, int);
     vector<string> wrapText(TTF_Font *, const string &, unsigned);
     void setText(string, Uint8, string, Uint8, Uint8, Uint8);
     void unsetText();
@@ -399,13 +402,16 @@ class GuiTextWindow: public GuiWindow {
     virtual ~GuiTextWindow();
 };
 GuiTextWindow::GuiTextWindow(SDL_Surface *_screen) : GuiWindow(_screen) {
-  hasText = false;
+  textFrameIdx = -1;
 }
-void GuiTextWindow::setTextPadding(Uint8 _padding) {
+void GuiTextWindow::addTextFrame(Uint8 _padding, int _r, int _g, int _b) {
   innerRect->w -= _padding * 2;
   innerRect->h -= _padding * 2;
   innerRect->x += _padding;
   innerRect->y += _padding;
+  addFrame(innerRect->x, innerRect->y, innerRect->w, innerRect->h);
+  textFrameIdx = frames.size() - 1;
+  frames[textFrameIdx]->setBgColor(_r, _g, _b);
 }
 vector<string> GuiTextWindow::wrapText(
                  TTF_Font *_font, const string &_text, unsigned _maxWidth
@@ -435,44 +441,38 @@ vector<string> GuiTextWindow::wrapText(
 }
 void GuiTextWindow::setText(string _text, Uint8 _fontSize, string _fontFile,
                             Uint8 _r, Uint8 _g, Uint8 _b) {
-  unsetText();
-  TTF_Font *font = TTF_OpenFont(_fontFile.c_str(), _fontSize);
-  SDL_Color tmpFontColor = { _r, _g, _b };
-  SDL_Surface *tempText = SDL_CreateRGBSurface(
-    0, innerRect->w, innerRect->h - titleText->h - windowBorderWidth,
-    screen->format->BytesPerPixel * 8, 0, 0, 0, 0
-  );
-  SDL_Rect tempTextRect;
-  tempTextRect.x = 0;
-  tempTextRect.y = 0;
-  vector<string> lines = wrapText(font, _text, innerRect->w);
-  for (Uint8 i = 0; i < lines.size(); i++) {
-    if (i > 0)
-      SDL_FreeSurface(text);
-    text = TTF_RenderText_Blended(font, lines[i].c_str(), tmpFontColor);
-    SDL_BlitSurface(text, NULL, tempText, &tempTextRect);
-    tempTextRect.y += text->h;
-  };
-  SDL_FreeSurface(text);
-  text = tempText;
+  fontSize = _fontSize;
+  fontFile = _fontFile;
+  fontColor.r = _r;
+  fontColor.g = _g;
+  fontColor.b = _b;
+  TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
+  textLines = wrapText(font, _text, innerRect->w);
   TTF_CloseFont(font);
-  hasText = true;
-}
-void GuiTextWindow::unsetText() {
-  if (hasText == true) {
-    SDL_FreeSurface(text);
-    hasText = false;
-  }
 }
 void GuiTextWindow::update() {
   GuiWindow::update();
-  if (hasText == true) {
-    // todo: use frame to handle redraw on update
-    SDL_BlitSurface(text, NULL, screen, innerRect);
+  if (redrawOnUpdate == true && textFrameIdx > -1 && textLines.size() > 0) {
+    TTF_Font *font = TTF_OpenFont(fontFile.c_str(), fontSize);
+    SDL_Color tmpFontColor = { fontColor.r, fontColor.g, fontColor.b };
+    SDL_Surface *textFrameSurface = frames[textFrameIdx]->getSurface();
+    SDL_Surface *text;
+    SDL_Rect textRect;
+    textRect.x = 0;
+    textRect.y = 0;
+    for (Uint8 i = 0; i < textLines.size(); i++) {
+      if (i > 0)
+        SDL_FreeSurface(text);
+      text = TTF_RenderText_Blended(font, textLines[i].c_str(), tmpFontColor);
+      SDL_BlitSurface(text, NULL, textFrameSurface, &textRect);
+      textRect.y += text->h;
+    };
+    SDL_FreeSurface(text);
+    TTF_CloseFont(font);
+    SDL_BlitSurface(textFrameSurface, NULL, screen, frames[textFrameIdx]->getRect());
   }
 }
 GuiTextWindow::~GuiTextWindow() {
-  unsetText();
 }
 
 // ----> GUI LIST WINDOW
@@ -571,7 +571,7 @@ int main (int argc, char *argv[]) {
   guiTW->addWindowFrame(10, 10, 300, 300, 0, 0, 0);
   guiTW->setWindowBorder(5, 255, 255, 255);
   guiTW->addTitleFrame(255, 255, 255);
-  guiTW->setTextPadding(5);
+  guiTW->addTextFrame(5, 0, 0, 0);
   guiTW->setText(
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce maximus, diam eget congue malesuada, eros mi maximus leo, vel ultrices leo turpis tempus ligula. Nunc pharetra commodo lorem, quis pharetra ligula. Aenean vel metus commodo eros convallis euismod.",
     16, "libertysans.ttf", 255, 255, 255
