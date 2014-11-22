@@ -76,12 +76,19 @@ class GuiFrame: public GuiBgColor {
     SDL_Rect innerRect;
     bool hasFrame;
     bool hasBorder;
+    struct stGuiFrameBorderActive {
+      bool top;
+      bool bottom;
+      bool left;
+      bool right;
+    } borderActive;
     Uint8 borderWidth;
     struct stGuiRgbColor borderColor;
   public:
     GuiFrame(Uint8);
     void set(Uint16, Uint16, Uint16, Uint16);
     void setBorder(Uint8, Uint8, Uint8, Uint8);
+    void setBorderActive(bool, bool, bool, bool);
     void move(Uint16, Uint16);
     SDL_Rect *getRect();
     SDL_Rect *getInnerRect();
@@ -95,6 +102,7 @@ GuiFrame::GuiFrame(Uint8 _bpp) {
   bpp = _bpp;
   hasFrame = false;
   hasBorder = false;
+  setBorderActive(true, true, true, true);
 }
 void GuiFrame::set(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   unset();
@@ -122,6 +130,12 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   innerRect.w = frameRect.w - 1 - 2 * _width;
   innerRect.h = frameRect.h - 1 - 2 * _width;
 }
+void GuiFrame::setBorderActive(bool _top, bool _bottom, bool _left, bool _right) {
+  borderActive.top = _top;
+  borderActive.bottom = _bottom;
+  borderActive.left = _left;
+  borderActive.right = _right;
+}
 void GuiFrame::move(Uint16 _x, Uint16 _y) {
   frameRect.x -= _x;
   frameRect.y -= _y;
@@ -145,28 +159,33 @@ void GuiFrame::bgFill() {
 }
 void GuiFrame::drawBorder() {
   if (hasBorder == true) {
-    boxRGBA(
-      frame, 0, 0, frame->clip_rect.w - 1, borderWidth,
-      borderColor.r, borderColor.g, borderColor.b, 255
-    ); // top
-    boxRGBA(
-      frame,
-      0, 0,
-      borderWidth, frame->clip_rect.h - 1,
-      borderColor.r, borderColor.g, borderColor.b, 255
-    ); // left
-    boxRGBA(
-      frame,
-      0, frame->clip_rect.h - 1 - borderWidth,
-      frame->clip_rect.w - 1, frame->clip_rect.h - 1,
-      borderColor.r, borderColor.g, borderColor.b, 255
-    ); // bottom
-    boxRGBA(
-      frame,
-      frame->clip_rect.w - 1 - borderWidth, 0,
-      frame->clip_rect.w - 1, frame->clip_rect.h - 1,
-      borderColor.r, borderColor.g, borderColor.b, 255
-    ); // bottom
+    if (borderActive.top == true)
+      boxRGBA(
+        frame, 0, 0, frame->clip_rect.w - 1, borderWidth,
+        borderColor.r, borderColor.g, borderColor.b, 255
+      );
+    if (borderActive.left == true)
+      boxRGBA(
+        frame,
+        0, 0,
+        borderWidth, frame->clip_rect.h - 1,
+        borderColor.r, borderColor.g, borderColor.b, 255
+      );
+    if (borderActive.bottom == true) {
+      boxRGBA(
+        frame,
+        0, frame->clip_rect.h - 1 - borderWidth,
+        frame->clip_rect.w - 1, frame->clip_rect.h - 1,
+        borderColor.r, borderColor.g, borderColor.b, 255
+      );
+    }
+    if (borderActive.right == true)
+      boxRGBA(
+        frame,
+        frame->clip_rect.w - 1 - borderWidth, 0,
+        frame->clip_rect.w - 1, frame->clip_rect.h - 1,
+        borderColor.r, borderColor.g, borderColor.b, 255
+      );
   }
 }
 void GuiFrame::unset() {
@@ -244,6 +263,44 @@ GuiElement::~GuiElement() {
     delete (*it);
   }
   frames.clear();
+}
+
+// ----> GUI TASKBAR
+class GuiTaskBar: public GuiElement {
+  protected:
+    bool isBottom;
+    Uint8 height;
+  public:
+    GuiTaskBar(SDL_Surface *);
+    void init(bool, Uint8, Uint8, int, int, int, int, int, int);
+    virtual void update();
+    virtual ~GuiTaskBar();
+};
+GuiTaskBar::GuiTaskBar(SDL_Surface *_screen) : GuiElement(_screen) {
+}
+void GuiTaskBar::init(bool _isBottom, Uint8 _height, Uint8 _borderWidth,
+                      int _bgR, int _bgG, int _bgB,
+                      int _borderR, int _borderG, int _borderB) {
+  isBottom = _isBottom;
+  height = _height;
+  if (mainFrameIdx == -1) {
+    if (isBottom == true)
+      addMainFrame(0, screen->h - height, screen->w, screen->h);
+    else
+      addMainFrame(0, screen->h - height, screen->w, screen->h);
+  }
+  setMainFrameBgColor(_bgR, _bgG, _bgB);
+  if (_borderWidth > 0) {
+    frames[mainFrameIdx]->setBorder(_borderWidth, _borderR, _borderG, _borderB);
+    frames[mainFrameIdx]->setBorderActive(
+      isBottom, !isBottom, false, false
+    );
+  }
+}
+void GuiTaskBar::update() {
+  GuiElement::update();
+}
+GuiTaskBar::~GuiTaskBar() {
 }
 
 // ----> GUI WINDOW
@@ -519,7 +576,7 @@ class GuiListWindow: public GuiWindow {
     Uint16 listOffset;
     Uint16 listEntryHeight;
     Uint16 listEntriesVisibleCount;
-    Sint16 selectedEntryIdx;
+    int selectedEntryIdx;
     string fontFile;
     Uint8 fontSizeTitle;
     Uint8 fontSizeText;
@@ -721,6 +778,9 @@ int main (int argc, char *argv[]) {
   SDL_WM_SetCaption("SDL GUI", NULL);
   SDL_Surface* screen = SDL_SetVideoMode(800, 600, 32, SDL_SWSURFACE);
 
+  GuiTaskBar *guiTB = new GuiTaskBar(screen);
+  guiTB->init(true, 20, 2, 0, 0, 0, 255, 255, 255);
+
   vector<GuiWindow *>windows;
   vector<GuiListWindow *>listWindows;
 
@@ -743,7 +803,7 @@ int main (int argc, char *argv[]) {
   guiLW->setTextOptions("libertysans.ttf", 16, 12, 255, 255, 255);
   guiLW->setScrollBarOptions(20, 255, 255, 255);
   guiLW->setEntrySelectionColor(100, 100, 100);
-  guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 255);
+  guiLW->addWindowFrame(325, 150, 300, 300, 0, 0, 0);
   guiLW->setWindowBorder(5, 255, 255, 255);
   guiLW->addTitleFrame(255, 255, 255);
   guiLW->addListFrame(0, 0, 0);
@@ -765,6 +825,7 @@ int main (int argc, char *argv[]) {
   for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
     windows[windowIdx]->update();
   }
+  guiTB->update();
   SDL_UpdateRect(screen, 0, 0, 0, 0);
 
   SDL_Event event;
@@ -812,6 +873,8 @@ int main (int argc, char *argv[]) {
         }
         if (windowClickEvent == true) {
           screenBgFill(screen);
+          guiTB->fullUpdate = false;
+          guiTB->update();
           for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
             windows[windowIdx]->fullUpdate = false;
             windows[windowIdx]->update();
@@ -834,6 +897,8 @@ int main (int argc, char *argv[]) {
         }
         if (windowMoveEvent == true) {
           screenBgFill(screen);
+          guiTB->fullUpdate = false;
+          guiTB->update();
           for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
             windows[windowIdx]->fullUpdate = false;
             windows[windowIdx]->update();
