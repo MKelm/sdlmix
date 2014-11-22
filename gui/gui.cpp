@@ -612,6 +612,12 @@ int main (int argc, char *argv[]) {
   Uint32 frameStart = 0;
   bool quit = false;
   bool lMouseBtnDown = false;
+  enum {
+    NO_WINDOW,
+    TEXT_WINDOW,
+    LIST_WINDOW
+  };
+  Uint8 activeWindow = NO_WINDOW;
 
   while (quit == false) {
     frameStart = SDL_GetTicks();
@@ -628,9 +634,17 @@ int main (int argc, char *argv[]) {
                      "windowCloseButton", event.button.x, event.button.y) == true
                   ) {
           cout << "List Window Close Button Event" << endl;
+        } else if (guiTW->eventAreas.isEventInArea(
+              "windowMoveBar", event.button.x, event.button.y) == true
+           ) {
+          activeWindow = TEXT_WINDOW;
+        } else if (guiLW->eventAreas.isEventInArea(
+                    "windowMoveBar", event.button.x, event.button.y) == true
+                  ) {
+          activeWindow = LIST_WINDOW;
         }
       } else if (event.type == SDL_MOUSEMOTION && lMouseBtnDown == true) {
-        if (guiTW->eventAreas.isEventInArea(
+        if (activeWindow == TEXT_WINDOW && guiTW->eventAreas.isEventInArea(
               "windowMoveBar", event.button.x, event.button.y) == true
            ) {
           screenBgFill(screen);
@@ -638,7 +652,7 @@ int main (int argc, char *argv[]) {
           guiLW->update();
           guiTW->setMove(event.button.x, event.button.y);
           guiTW->update();
-        } else if (guiLW->eventAreas.isEventInArea(
+        } else if (activeWindow == LIST_WINDOW && guiLW->eventAreas.isEventInArea(
                     "windowMoveBar", event.button.x, event.button.y) == true
                   ) {
           screenBgFill(screen);
@@ -650,6 +664,7 @@ int main (int argc, char *argv[]) {
       } else if (event.type == SDL_MOUSEBUTTONUP &&
                  event.button.button == SDL_BUTTON_LEFT) {
         lMouseBtnDown = false;
+        activeWindow = NO_WINDOW;
         guiLW->resetMove();
         guiTW->resetMove();
       }
