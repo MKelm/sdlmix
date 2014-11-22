@@ -177,41 +177,30 @@ GuiFrame::~GuiFrame() {
   unset();
 }
 
-// ----> GUI SCREEN
-class GuiScreen: public GuiBgColor {
+// ----> GUI ELEMENT
+class GuiElement {
   protected:
     SDL_Surface *screen;
     vector<GuiFrame *> frames;
   public:
     bool redrawOnUpdate;
     GuiEventAreas eventAreas;
-    GuiScreen(SDL_Surface *);
+    GuiElement(SDL_Surface *);
     GuiFrame *addFrame(Uint16, Uint16, Uint16, Uint16);
-    void bgFill();
     virtual void update();
-    virtual ~GuiScreen();
+    virtual ~GuiElement();
 };
-GuiScreen::GuiScreen(SDL_Surface *_screen) {
+GuiElement::GuiElement(SDL_Surface *_screen) {
   screen = _screen;
-  hasBgColor = false;
   redrawOnUpdate = true;
 }
-GuiFrame *GuiScreen::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
+GuiFrame *GuiElement::addFrame(Uint16 _x, Uint16 _y, Uint16 _w, Uint16 _h) {
   GuiFrame *tempFrame = new GuiFrame(screen->format->BytesPerPixel * 8);
   tempFrame->set(_x, _y, _w, _h);
   frames.push_back(tempFrame);
   return tempFrame;
 }
-void GuiScreen::bgFill() {
-  if (hasBgColor == true) {
-    SDL_FillRect(
-      screen, &screen->clip_rect,
-      SDL_MapRGB(screen->format,  bgColor.r,  bgColor.g, bgColor.b)
-    );
-  }
-}
-void GuiScreen::update() {
-  bgFill();
+void GuiElement::update() {
   if (frames.size() > 0) {
     vector<GuiFrame *>::iterator it;
     for (it = frames.begin(); it != frames.end(); it++) {
@@ -223,7 +212,7 @@ void GuiScreen::update() {
     }
   }
 }
-GuiScreen::~GuiScreen() {
+GuiElement::~GuiElement() {
   vector<GuiFrame *>::iterator it;
   for (it = frames.begin(); it != frames.end(); it++) {
     delete (*it);
@@ -232,7 +221,7 @@ GuiScreen::~GuiScreen() {
 }
 
 // ----> GUI WINDOW
-class GuiWindow: public GuiScreen {
+class GuiWindow: public GuiElement {
   protected:
     int windowFrameIdx;
     Uint8 windowBorderWidth;
@@ -258,7 +247,7 @@ class GuiWindow: public GuiScreen {
     virtual void update();
     virtual ~GuiWindow();
 };
-GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiScreen(_screen) {
+GuiWindow::GuiWindow(SDL_Surface *_screen) : GuiElement(_screen) {
   hasTitleText = false;
   hasCloseBtnText = false;
   windowFrameIdx = -1;
@@ -347,7 +336,7 @@ void GuiWindow::addTitleFrame(int _r, int _g, int _b) {
   }
 }
 void GuiWindow::update() {
-  GuiScreen::update();
+  GuiElement::update();
   if (titleFrameIdx > -1) {
     SDL_Rect *titleFrameRect = frames[titleFrameIdx]->getRect();
     eventAreas.update(
