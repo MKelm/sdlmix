@@ -16,5 +16,29 @@ gui : $(OBJECTS)
 gui.o : gui.cpp $(HEADERS)
 	$(CC) $(CFLAGS) -c gui.cpp
 
+bgcolor.o : bgcolor.cpp bgcolor.hpp global.hpp
+	$(CC) $(CFLAGS) -c bgcolor.cpp
+
+eventareas.o : eventareas.cpp eventareas.hpp global.hpp
+	$(CC) $(CFLAGS) -c eventareas.cpp
+
+frame.o : frame.cpp frame.hpp global.hpp bgcolor.hpp
+	$(CC) $(CFLAGS) -c frame.cpp
+
+element.o : element.cpp element.hpp global.hpp eventareas.hpp frame.hpp
+	$(CC) $(CFLAGS) -c element.cpp
+
+taskbar.o : taskbar.cpp taskbar.hpp global.hpp element.hpp
+	$(CC) $(CFLAGS) -c taskbar.cpp
+
+window.o : window.cpp window.hpp global.hpp element.hpp
+	$(CC) $(CFLAGS) -c window.cpp
+
+textwindow.o : textwindow.cpp textwindow.hpp global.hpp window.hpp
+	$(CC) $(CFLAGS) -c textwindow.cpp
+
+listwindow.o : listwindow.cpp listwindow.hpp global.hpp window.hpp
+	$(CC) $(CFLAGS) -c listwindow.cpp
+
 clean :
 	$(RM) *.o
