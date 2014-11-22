@@ -675,7 +675,7 @@ int main (int argc, char *argv[]) {
   Uint32 frameStart = 0;
   bool quit = false;
   bool lMouseBtnDown = false;
-  Uint8 activeMoveWindow = -1;
+  Uint8 focusWindowIdx = -1;
 
   while (quit == false) {
     frameStart = SDL_GetTicks();
@@ -695,8 +695,13 @@ int main (int argc, char *argv[]) {
           } else if (windows[windowIdx]->eventAreas.isEventInArea(
               "windowMoveBar", event.button.x, event.button.y) == true
              ) {
-            activeMoveWindow = windowIdx;
+            focusWindowIdx = windowIdx;
           }
+        }
+        if (focusWindowIdx > -1) {
+          windows.insert(windows.end(), windows[focusWindowIdx]);
+          windows.erase(windows.begin() + focusWindowIdx);
+          focusWindowIdx = windows.size() - 1;
         }
         if (windowCloseEvent == true) {
           screenBgFill(screen);
@@ -713,7 +718,7 @@ int main (int argc, char *argv[]) {
         for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
           if (windows[windowIdx]->eventAreas.isEventInArea(
               "windowMoveBar", event.button.x, event.button.y) == true &&
-              activeMoveWindow == windowIdx
+              focusWindowIdx == windowIdx
              ) {
             windowMoveEvent = true;
             windows[windowIdx]->setMove(event.button.x, event.button.y);
@@ -732,7 +737,6 @@ int main (int argc, char *argv[]) {
         for (windowIdx = 0; windowIdx < windows.size(); windowIdx++) {
           windows[windowIdx]->resetMove();
         }
-        activeMoveWindow = -1;
 
       } else if (event.type == SDL_MOUSEBUTTONUP) {
         if (event.button.button == SDL_BUTTON_WHEELUP) {
