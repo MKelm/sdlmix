@@ -66,6 +66,8 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 8", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 9", "Lorem ipsum dolor sit amet.");
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 11", "Lorem ipsum dolor sit amet.");
+  guiLW->addEntry("listitem.png", "Title 12", "Lorem ipsum dolor sit amet.");
   windows.push_back(guiLW);
   listWindows.push_back(guiLW);
   guiTB->addTask("TEST LIST WINDOW", false);

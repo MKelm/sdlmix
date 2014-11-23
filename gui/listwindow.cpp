@@ -74,7 +74,7 @@ void GuiListWindow::addEntry(string _image, string _title, string _text) {
 
 void GuiListWindow::changeListOffset(int value) {
   if (listOffset + value >= 0 &&
-      listOffset + value < entries.size() - listEntriesVisibleCount) {
+      listOffset + value < entries.size() + 1 - listEntriesVisibleCount) {
     listOffset += value;
   }
 }
@@ -95,11 +95,11 @@ void GuiListWindow::drawScrollBar(Uint16 entryHeight) {
     Uint16 sliderWidth = scrollBarWidth - sliderMargin * 2;
     Uint16 sliderOffsetY = floor(
       (float)listOffset * ((listFrameRect->h - 1. - sliderMargin) /
-        (float)(entries.size() - listEntriesVisibleCount))
+        (float)(entries.size() + 1 - listEntriesVisibleCount))
     );
     Uint16 sliderHeight = floor(
       (listFrameRect->h - 1. - sliderMargin) /
-        (float)(entries.size() - listEntriesVisibleCount)
+        (float)(entries.size() + 1 - listEntriesVisibleCount)
     ) - sliderMargin;
     Uint16 barWidth = sliderWidth + 2 * sliderMargin;
 
