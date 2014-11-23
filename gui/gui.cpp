@@ -23,7 +23,11 @@ int main (int argc, char *argv[]) {
   SDL_Surface* screen = SDL_SetVideoMode(800, 600, 32, SDL_SWSURFACE);
 
   GuiTaskBar *guiTB = new GuiTaskBar(screen);
-  guiTB->init(true, 20, 2, 0, 0, 0, 255, 255, 255);
+  guiTB->setFrame(true, 20, 0, 0, 0);
+  guiTB->setBorder(2, 255, 255, 255);
+  guiTB->setTaskBgColor(0, 0, 0);
+  guiTB->setTaskTextOptions(12, "libertysans.ttf", 255, 255, 255);
+  guiTB->setTaskBorderOptions(2, 255, 255, 255);
 
   vector<GuiWindow *>windows;
   vector<GuiListWindow *>listWindows;
@@ -40,6 +44,7 @@ int main (int argc, char *argv[]) {
     16, "libertysans.ttf", 255, 255, 255
   );
   windows.push_back(guiTW);
+  guiTB->addTask("TEST TEXT WINDOW", false);
 
   GuiListWindow *guiLW = new GuiListWindow(screen);
   guiLW->setTitle("TEST LIST WINDOW", 18, "libertysans.ttf", 0, 0, 0);
@@ -63,6 +68,7 @@ int main (int argc, char *argv[]) {
   guiLW->addEntry("listitem.png", "Title 10", "Lorem ipsum dolor sit amet.");
   windows.push_back(guiLW);
   listWindows.push_back(guiLW);
+  guiTB->addTask("TEST LIST WINDOW", false);
 
   screenBgFill(screen);
   Uint8 windowIdx;

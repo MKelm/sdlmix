@@ -29,10 +29,12 @@ void GuiFrame::setBorder(Uint8 _width, Uint8 _r, Uint8 _g, Uint8 _b) {
   borderColor.g = _g;
   borderColor.b = _b;
   hasBorder = true;
-  innerRect.x += _width;
-  innerRect.y += _width;
-  innerRect.w = frameRect.w - 1 - 2 * _width;
-  innerRect.h = frameRect.h - 1 - 2 * _width;
+  if (borderActive.left == true) innerRect.x += _width;
+  if (borderActive.top == true) innerRect.y += _width;
+  if (borderActive.left == true) innerRect.w -= _width;
+  if (borderActive.right == true) innerRect.w -= _width;
+  if (borderActive.top == true) innerRect.h -= _width;
+  if (borderActive.bottom == true) innerRect.h -= _width;
 }
 
 void GuiFrame::setBorderActive(bool _top, bool _bottom, bool _left, bool _right) {

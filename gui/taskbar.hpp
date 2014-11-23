@@ -4,13 +4,32 @@
 #include "global.hpp"
 #include "element.hpp"
 
+struct stGuiTask {
+  string title;
+  bool minimized;
+  Uint16 frameIdx;
+};
+
 class GuiTaskBar: public GuiElement {
   protected:
     bool isBottom;
     Uint8 height;
+    Uint16 taskWidth;
+    struct stGuiRgbColor taskBgColor;
+    Uint8 taskFontSize;
+    string taskFontFile;
+    struct stGuiRgbColor taskFontColor;
+    Uint8 taskBorderWidth;
+    struct stGuiRgbColor taskBorderColor;
+    vector<stGuiTask *> tasks;
   public:
     GuiTaskBar(SDL_Surface *);
-    void init(bool, Uint8, Uint8, int, int, int, int, int, int);
+    void setFrame(bool, Uint8, int, int, int);
+    void setBorder(Uint8, int, int, int);
+    void setTaskBgColor(int, int, int);
+    void setTaskTextOptions(Uint8, string, int, int, int);
+    void setTaskBorderOptions(Uint8, int, int, int);
+    void addTask(string, bool);
     virtual void update();
     virtual ~GuiTaskBar();
 };
